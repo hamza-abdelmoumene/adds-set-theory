@@ -40,28 +40,32 @@ The program runs entirely in the terminal with a simple menu.
 ## Project structure
 
 ```
-adds-set-theory/
-├── src/
-│   ├── main.c          # entry point and menu
-│   ├── bst.c           # BST operations (insert, search, free, inorder)
-│   ├── paralist.c      # linked list of paragraphs
-│   ├── fileparser.c    # reads files and builds the data structure
-│   ├── setops.c        # union, intersection, difference
-│   └── utils.c         # word normalization (lowercase, strip punctuation)
+./
+├── docs/
 ├── include/
-│   ├── bst.h
-│   ├── paralist.h
-│   ├── fileparser.h
-│   ├── setops.h
+│   ├── bst_model.h
+│   ├── file_parser.h
+│   ├── intro.h
+│   ├── ll_model.h
+│   ├── sets_ops.h
 │   └── utils.h
+├── src/
+│   ├── bst_model.c
+│   ├── file_parser.c
+│   ├── intro.c
+│   ├── ll_model.c
+│   ├── main.c
+│   ├── sets_ops.c
+│   └── utils.c
 ├── tests/
 │   ├── test1.txt
 │   └── test2.txt
-├── docs/
-│   └── presentation.pptx
-├── .gitignore
+├── lab_assignment.pdf
+├── LICENSE
 ├── Makefile
 └── README.md
+
+5 directories, 19 files
 ```
 
 ---
@@ -119,7 +123,7 @@ or from two different files.
 ## Notes
 
 - Words are normalized before insertion: lowercased and stripped of punctuation.
-- Paragraphs are separated by blank lines in the input files.
+- Paragraphs are delimited by periods '.' and newline characters '\n'.
 - The result of each operation is printed in alphabetical order (inorder traversal).
 - Memory is freed properly at exit.
 
