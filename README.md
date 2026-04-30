@@ -1,8 +1,8 @@
 # ADDS Lab Exam — Set Theory on Linguistic Structures
 
 Lab work for the Algorithmics and Dynamic Data Structures course (ADDS).  
-The goal is to represent text paragraphs as sets using dynamic data structures in C,
-and to implement the classic set operations: union, intersection, and difference.
+The goal is to represent text files as hierarchical set structures using dynamic data structures in C,
+and to implement the classic set operations: union, intersection, and difference at three levels.
 
 ---
 
@@ -18,9 +18,10 @@ Academic Year: 2025–2026
 ## What this project does
 
 You give it one or two plain text files. It reads them, splits them into paragraphs,
-and stores each paragraph as a Binary Search Tree of unique words (so it naturally
-behaves like a mathematical set). Then you can run union, intersection, or difference
-on any two paragraphs, either from the same file or from two different files.
+then sentences, and stores each sentence as a Binary Search Tree of unique words
+(so it naturally behaves like a mathematical set). Then you can run union, intersection,
+or difference on any two structures at three levels: **words**, **sentences**, or **paragraphs**,
+either from the same file or from two different files.
 
 The program runs entirely in the terminal with a simple menu.
 
@@ -28,11 +29,14 @@ The program runs entirely in the terminal with a simple menu.
 
 ## Data structures used
 
-- **BST (Binary Search Tree)** — one tree per paragraph, each node is a unique word.
+- **BST (Binary Search Tree)** — one tree per sentence, each node is a unique word.
   Chosen because insert and search are O(log n), and duplicates are rejected naturally,
   which matches the definition of a set.
 
-- **Linked List** — chains the paragraphs of a file together dynamically.
+- **Linked List (Sentences)** — chains the sentences of a paragraph together dynamically.
+  Chosen because the number of sentences is not known in advance.
+
+- **Linked List (Paragraphs)** — chains the paragraphs of a file together dynamically.
   Chosen because the number of paragraphs is not known in advance.
 
 ---
@@ -43,19 +47,21 @@ The program runs entirely in the terminal with a simple menu.
 ./
 ├── docs/
 ├── include/
-│   ├── bst_model.h
+│   ├── word_bst.h
+│   ├── sentence_ll.h
+│   ├── paragraph_ll.h
+│   ├── sets_ops.h
 │   ├── file_parser.h
 │   ├── intro.h
-│   ├── ll_model.h
-│   ├── sets_ops.h
 │   └── utils.h
 ├── src/
-│   ├── bst_model.c
+│   ├── word_bst.c
+│   ├── sentence_ll.c
+│   ├── paragraph_ll.c
+│   ├── sets_ops.c
 │   ├── file_parser.c
 │   ├── intro.c
-│   ├── ll_model.c
 │   ├── main.c
-│   ├── sets_ops.c
 │   └── utils.c
 ├── tests/
 │   ├── test1.txt
@@ -65,7 +71,7 @@ The program runs entirely in the terminal with a simple menu.
 ├── Makefile
 └── README.md
 
-5 directories, 19 files
+5 directories, 21 files
 ```
 
 ---
@@ -111,19 +117,28 @@ Or if you have WSL installed, follow the Linux instructions above.
 
 | Operation    | What it returns                              |
 |--------------|----------------------------------------------|
-| Union        | All words present in either paragraph        |
-| Intersection | Only the words that appear in both           |
-| Difference   | Words in paragraph A that are not in B       |
+| Union        | All elements present in either structure     |
+| Intersection | Only the elements that appear in both        |
+| Difference   | Elements in structure A that are not in B    |
 
-The user selects at runtime whether to compare paragraphs from the same file
-or from two different files.
+Operations are supported at three levels:
+
+| Level       | Description                                  |
+|-------------|----------------------------------------------|
+| Word        | Compares BSTs of words from two sentences    |
+| Sentence    | Compares sentences from two paragraphs       |
+| Paragraph   | Compares paragraphs from two files           |
+
+The user selects at runtime the operation level and whether to compare structures
+from the same file or from two different files.
 
 ---
 
 ## Notes
 
 - Words are normalized before insertion: lowercased and stripped of punctuation.
-- Paragraphs are delimited by periods '.' and newline characters '\n'.
+- Sentences are delimited by periods '.'.
+- Paragraphs are delimited by newline characters '\n'.
 - The result of each operation is printed in alphabetical order (inorder traversal).
 - Memory is freed properly at exit.
 
