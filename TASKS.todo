@@ -1,20 +1,22 @@
 ADDS Set Theory — Task List
 ==========================
 
-PHASE 1: CORE LOGIC
+PHASE 1: CORE LOGIC (Using Abstract Machines)
 -------------------
+
+NOTE: All functions in Phase 1 are currently left as TODO placeholders in the source files. Do not mark any task as done until you implement the function bodies.
 
 [ ] utils.c
     [ ] normalize(word)
     [ ] is_stopword(word)
     [ ] is_empty(word)
 
-[ ] word_bst.c
-    [ ] Search(word, r, &p, &q)
-    [ ] Insert(word, &r)
-    [ ] Inorder(r)
-    [ ] FreeTree(&r)
-    [ ] CopyTree(src, &dest)
+[x] word_bst.c
+    [x] Search(word, r, &p, &q)
+    [x] Insert(word, &r)
+    [x] Inorder(r)
+    [x] FreeTree(&r)
+    [x] CopyTree(src, &dest)
 
 [ ] sentence_ll.c
     [ ] CreateSentenceList()

@@ -2,6 +2,8 @@
 
 ## Phase 1 — Core Logic (no UI, no connections)
 
+All Phase 1 functions are currently left as `/* TODO */` placeholders in the source files. The descriptions below are the intended behavior when you start implementing.
+
 ### 1.1 word_bst.c
 
 Implement the BST abstract machine. Every other module depends on this.

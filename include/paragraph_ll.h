@@ -1,21 +1,23 @@
 #ifndef PARAGRAPH_LL_H
 #define PARAGRAPH_LL_H
 
+#include <stdlib.h>
+#include "sentence_ll.h"
+
 /**
  * @file paragraph_ll.h
  * @brief Linked list implementation for paragraphs.
+ * Incorporates strict Abstract Machine naming conventions.
  */
-
-#include "sentence_ll.h"
 
 /**
  * @struct ParagraphNode
  * @brief Represents a paragraph, containing a list of sentences.
  */
 typedef struct ParagraphNode {
-    int id;                     // Position of the paragraph
-    SentenceList sentences;     // Sentences contained in this paragraph
-    struct ParagraphNode *next; // Pointer to the next paragraph
+    int id;                       // Position of the paragraph
+    SentenceList val;             // Sentences contained in this paragraph
+    struct ParagraphNode *addr;   // Pointer to the next paragraph
 } ParagraphNode;
 
 /**
@@ -24,8 +26,11 @@ typedef struct ParagraphNode {
  */
 typedef struct ParagraphList {
     ParagraphNode *head;
-    int count;                  // Total number of paragraphs
+    int count;                    // Total number of paragraphs
 } ParagraphList;
+
+// Linked List Abstract Machine Operations are inherited from sentence_ll.h
+// Allocate(p), Free(p), Ass_val(p, v), Ass_adr(p, q), Value(p), Next(p)
 
 // Initialize an empty ParagraphList.
 ParagraphList CreateParagraphList(void);
