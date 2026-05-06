@@ -1,20 +1,36 @@
-// Include guards
 #ifndef WORD_BST_H
 #define WORD_BST_H
 
-// Struct and function declarations for the word binary search tree
+/**
+ * @file word_bst.h
+ * @brief Binary Search Tree implementation for storing words.
+ */
 
-struct WordNode {
-    char *word;
-    struct WordNode *left;
-    struct WordNode *right;
-};
+#define MAX_WORD 100
 
-struct WordBST {
-    struct WordNode *root;
-};
+/**
+ * @struct WordNode
+ * @brief Node for the binary search tree containing a single word.
+ */
+typedef struct WordNode {
+    char word[MAX_WORD];
+    struct WordNode *lc; // Left child
+    struct WordNode *rc; // Right child
+} WordNode;
 
-struct WordBST *createWordBST();
-void insertWord(struct WordBST *bst, char *word);
+// Search for a word in the BST. Returns the node (p) and its parent (q).
+void Search(const char *word, WordNode *r, WordNode **p, WordNode **q);
+
+// Insert a word into the BST. Ignores duplicates.
+void Insert(const char *word, WordNode **r);
+
+// Print the BST in-order (alphabetically).
+void Inorder(WordNode *r);
+
+// Free all nodes in the BST and set root to NULL.
+void FreeTree(WordNode **r);
+
+// Copy all words from src tree into dest tree.
+void CopyTree(WordNode *src, WordNode **dest);
 
 #endif // WORD_BST_H

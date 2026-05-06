@@ -1,0 +1,110 @@
+ADDS Set Theory — Task List
+==========================
+
+PHASE 1: CORE LOGIC
+-------------------
+
+[ ] utils.c
+    [ ] normalize(word)
+    [ ] is_stopword(word)
+    [ ] is_empty(word)
+
+[ ] word_bst.c
+    [ ] Search(word, r, &p, &q)
+    [ ] Insert(word, &r)
+    [ ] Inorder(r)
+    [ ] FreeTree(&r)
+    [ ] CopyTree(src, &dest)
+
+[ ] sentence_ll.c
+    [ ] CreateSentenceList()
+    [ ] AddSentence(&list, bst_root)
+    [ ] GetSentence(list, id)
+    [ ] PrintSentences(list)
+    [ ] FreeSentenceList(&list)
+
+[ ] paragraph_ll.c
+    [ ] CreateParagraphList()
+    [ ] AddParagraph(&list, sentence_list)
+    [ ] GetParagraph(list, id)
+    [ ] PrintParagraphs(list)
+    [ ] FreeParagraphList(&list)
+
+[ ] file_parser.c
+    [ ] ParseFile(filename)
+
+[ ] sets_ops.c — word level
+    [ ] WordUnion(A, B)
+    [ ] WordIntersection(A, B)
+    [ ] WordDifference(A, B)
+
+[ ] sets_ops.c — sentence level
+    [ ] SentenceUnion(A, B)
+    [ ] SentenceIntersection(A, B)
+    [ ] SentenceDifference(A, B)
+
+[ ] sets_ops.c — paragraph level
+    [ ] ParagraphUnion(A, B)
+    [ ] ParagraphIntersection(A, B)
+    [ ] ParagraphDifference(A, B)
+
+
+PHASE 2: CONNECTIONS
+--------------------
+
+[ ] File loading in main.c
+    [ ] Load file 1
+    [ ] Load file 2
+    [ ] Handle overwrite confirmation
+
+[ ] Selection helpers
+    [ ] select_sentence(list)
+    [ ] select_paragraph(list)
+    [ ] select_file()
+
+[ ] Operation dispatch
+    [ ] word level dispatch
+    [ ] sentence level dispatch
+    [ ] paragraph level dispatch
+
+[ ] Result display
+    [ ] PrintWordResult(bst)
+    [ ] PrintSentenceResult(list)
+    [ ] PrintParagraphResult(list)
+
+
+PHASE 3: UI AND ANIMATIONS
+--------------------------
+
+[ ] Menu system
+    [ ] draw_box(title, options[], n)
+    [ ] menu_main()
+    [ ] menu_level()
+    [ ] menu_scope()
+    [ ] menu_operation()
+    [ ] animated menu item reveal (30ms per line)
+
+[ ] Animations
+    [ ] loading_bar(label, duration_ms)
+    [ ] typewrite_result(words[], n)
+    [ ] highlight_print(word, color)
+    [ ] animated_separator() — reuse from intro.c
+
+[ ] Live operation visualization
+    [ ] print_bst_inline(bst, color)
+    [ ] visualize_operation(A, B, result, op_name)
+
+[ ] Tree visualizer
+    [ ] print_tree(root, depth)
+
+
+FINAL
+-----
+
+[ ] Test all operations on test1.txt and test2.txt
+[ ] Test edge cases (empty paragraph, single word sentence)
+[ ] Memory check (no leaks — free everything)
+[ ] Clean up all TODOs and debug prints
+[ ] Final README update
+[ ] PowerPoint presentation
+[ ] Push final version to GitHub
