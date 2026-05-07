@@ -272,7 +272,7 @@ void MedianInsert(char **array, size_t left, size_t right, WordNode **root)
 
     Insert(root, array[mid]);
 
-    // logic - insert the median of the array at the bst recursively to ensure a balanced bst. 
+    // logic - insert the median of the array at the bst recursively to ensure a balanced bst
     MedianInsert(array, left, mid - 1, root);
     MedianInsert(array, mid + 1, right, root);
 }

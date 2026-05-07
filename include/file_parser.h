@@ -1,12 +1,26 @@
 #ifndef FILE_PARSER_H
 #define FILE_PARSER_H
 
+#include "paragraph_ll.h"
+#include "sentence_ll.h"
+
 /**
  * @file file_parser.h
  * @brief File loading and parsing functionality.
  */
 
-#include "paragraph_ll.h"
+/**
+ * @struct ParserState
+ * @brief Holds the internal state of the parser during file reading.
+ */
+typedef struct {
+    char         word[256];
+    int          word_len;
+    char       **words;
+    int          word_count;
+    int          word_capacity;
+    SentenceList current_sentences;
+} ParserState;
 
 /**
  * @brief Parses a text file into a structured paragraph list.
