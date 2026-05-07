@@ -6,14 +6,12 @@
 ParagraphList CreateParagraphList(void)
 {
     ParagraphList list = {NULL, NULL, 0, NULL, 0};
-
     return list;
 }
 
 // Append a new paragraph (represented by its sentence list) to the list.
 void AddParagraph(ParagraphList *list, SentenceList sentence_list)
 {
-    // logic - append a paragraph simply by iterating to the tail of the list
     ParagraphNode *new_node;
     Allocate(new_node);
     new_node->id = list->count;
@@ -24,25 +22,26 @@ void AddParagraph(ParagraphList *list, SentenceList sentence_list)
     {
         list->head = new_node;
         list->tail = new_node;
-        return;
+    }
+    else
+    {
+        Ass_adr(list->tail, new_node);
+        list->tail = new_node;
     }
 
-    Ass_adr(list->tail, new_node);
-    list->tail = new_node;
     list->count++;
 }
 
-
+// Retrieve a paragraph node by its ID (linear scan fallback).
 ParagraphNode *GetParagraph(ParagraphList list, int id)
 {
-    // logic - same as Get Sentence function, bounds check and iterate until find a match.
-    if(id < 0 || id >= list.count)
+    if (id < 0 || id >= list.count)
         return NULL;
 
     ParagraphNode *current = list.head;
-    while(current != NULL)
+    while (current != NULL)
     {
-        if(current->id == id)
+        if (current->id == id)
             return current;
         current = Next(current);
     }
@@ -53,11 +52,10 @@ ParagraphNode *GetParagraph(ParagraphList list, int id)
 // Print all paragraphs, visualizing their sentences and words.
 void PrintParagraphs(ParagraphList list)
 {
-    // logic - iterate over the paragraph nodes and inside the loop call the sentence printer function.
     ParagraphNode *current = list.head;
-    while(current != NULL)
+    while (current != NULL)
     {
-        printf("――― Paragraph %d ―――", current->id);
+        printf("――― Paragraph %d ―――\n", current->id);
         PrintSentences(current->val);
         printf("\n");
         current = Next(current);
@@ -69,7 +67,7 @@ void FreeParagraphList(ParagraphList *list)
 {
     ParagraphNode *current = list->head;
 
-    while(current != NULL)
+    while (current != NULL)
     {
         ParagraphNode *temp = Next(current);
         FreeSentenceList(&current->val);
@@ -78,33 +76,46 @@ void FreeParagraphList(ParagraphList *list)
     }
 
     free(list->index);
-    list->index = NULL;
-    list->head = NULL;
-    list->tail = NULL;
-    list->count = 0;
+
+    list->head     = NULL;
+    list->tail     = NULL;
+    list->index    = NULL;
+    list->count    = 0;
     list->capacity = 0;
 }
 
 // Build the index array after parsing for O(1) access by index.
 void BuildIndex(ParagraphList *list)
 {
-    list->index = malloc((list->count) * sizeof(ParagraphNode* ));
-    if(list->index == NULL){
-        // TODO: Handle malloc fail
+    if (list->count == 0)
+    {
+        list->index    = NULL;
+        list->capacity = 0;
+        return;
     }
+
+    list->index = (ParagraphNode **)malloc(list->count * sizeof(ParagraphNode *));
+    if (list->index == NULL)
+    {
+        fprintf(stderr, "BuildIndex: out of memory\n");
+        exit(EXIT_FAILURE);
+    }
+
     list->capacity = list->count;
+
     ParagraphNode *current = list->head;
-    while(current != NULL)
+    while (current != NULL)
     {
         list->index[current->id] = current;
         current = Next(current);
     }
 }
 
-// Retrieve a paragraph node by index from the built array.
+// Retrieve a paragraph node in O(1) using the index array.
 ParagraphNode *GetParagraphByIndex(ParagraphList *list, int i)
 {
-    if(i < 0 || i >= list->count) return NULL;
+    if (i < 0 || i >= list->count)
+        return NULL;
+
     return list->index[i];
-    return NULL;
 }

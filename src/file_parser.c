@@ -23,19 +23,18 @@ static char *StrDup(const char *s)
 //-----------------------------------------------------------------------------
 
 // Flush the current word buffer into the words array.
-// Normalizes, skips empty strings and stopwords, then grows the array if needed.
+// Normalizes and skips empty strings, then grows the array if needed.
 static void FlushWord(ParserState *s)
 {
     if (s->word_len == 0)
         return;
 
     s->word[s->word_len] = '\0';
-    s->word_len = 0; // FIX: reset length so the next word starts fresh
+    s->word_len = 0;
 
     normalize(s->word);
 
-    // skip empty words and stopwords
-    if (is_empty(s->word) || is_stopword(s->word))
+    if (is_empty(s->word))
         return;
 
     if (s->word_count >= s->word_capacity)
@@ -70,8 +69,8 @@ static void FlushSentence(ParserState *s)
         free(s->words[i]);
 
     free(s->words);
-    s->words = NULL;
-    s->word_count = 0;
+    s->words        = NULL;
+    s->word_count   = 0;
     s->word_capacity = 0;
 }
 
@@ -96,6 +95,12 @@ ParagraphList ParseFile(const char *filename)
 {
     ParagraphList result = CreateParagraphList();
 
+    if (filename == NULL)
+    {
+        fprintf(stderr, "ParseFile: filename must not be NULL\n");
+        return result;
+    }
+
     FILE *file = fopen(filename, "r");
     if (!file)
     {
@@ -104,11 +109,11 @@ ParagraphList ParseFile(const char *filename)
     }
 
     ParserState s;
-    s.word_len = 0;
-    s.words = NULL;
-    s.word_count = 0;
-    s.word_capacity = 0;
-    s.current_sentences = CreateSentenceList();
+    s.word_len           = 0;
+    s.words              = NULL;
+    s.word_count         = 0;
+    s.word_capacity      = 0;
+    s.current_sentences  = CreateSentenceList();
 
     int c;
     while ((c = fgetc(file)) != EOF)
@@ -130,12 +135,12 @@ ParagraphList ParseFile(const char *filename)
         }
         else
         {
-            if (s.word_len < (int)sizeof(s.word) - 1) // guard against buffer overflow
+            if (s.word_len < (int)sizeof(s.word) - 1)
                 s.word[s.word_len++] = (char)c;
         }
     }
 
-    // Sentence must be flushed before paragraph, otherwise the last sentence is lost.
+    // Sentence must be flushed before paragraph to avoid losing the last sentence.
     FlushWord(&s);
     FlushSentence(&s);
     FlushParagraph(&s, &result);
