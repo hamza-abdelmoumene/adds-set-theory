@@ -54,7 +54,6 @@ static inline WordNode *AllocateNodeImpl(void)
 
 #define AllocateNode() (AllocateNodeImpl())
 
-
 // Search for a word in the BST. Returns the node (p) and its parent (q).
 void Search(const char *word, WordNode *r, WordNode **p, WordNode **q);
 
@@ -69,5 +68,10 @@ void FreeTree(WordNode **r);
 
 // Copy all words from src tree into dest tree.
 void CopyTree(WordNode *src, WordNode **dest);
+
+// Balanced BST helpers (array -> sort -> median-first insertion)
+void CollectWords(WordNode *root, char ***array, size_t *size, size_t *capacity);
+void SortWords(char **array, size_t size);
+void MedianInsert(char **array, size_t left, size_t right, WordNode **root);
 
 #endif // WORD_BST_H

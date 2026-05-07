@@ -29,6 +29,7 @@ typedef struct SentenceNode
 typedef struct SentenceList
 {
     SentenceNode *head;
+    SentenceNode *tail;
     int count; // Total number of sentences
 } SentenceList;
 

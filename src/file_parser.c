@@ -8,6 +8,9 @@
 ParagraphList ParseFile(const char *filename)
 {
     ParagraphList doc = CreateParagraphList();
-    // TODO: Implement file parsing logic (char by char or token by token)
+    // TODO: Implement two-pass parsing per sentence:
+    // TODO: 1) collect words into a dynamic array
+    // TODO: 2) sort array (qsort + strcmp) and build BST via MedianInsert
+    // TODO: After parsing, call BuildIndex to fill the paragraph index array
     return doc;
 }

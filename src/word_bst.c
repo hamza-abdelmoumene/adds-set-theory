@@ -7,7 +7,7 @@
 // Search for a word in the BST using Abstract Machine. Returns the node (p) and its parent (q).
 void Search(const char *word, WordNode *r, WordNode **p, WordNode **q)
 {
-    // edge cases traiting
+    // handle edge cases
     if (p == NULL || q == NULL)
     {
         fprintf(stderr, "Search: output pointers must not be NULL\n");
@@ -65,7 +65,7 @@ void Search(const char *word, WordNode *r, WordNode **p, WordNode **q)
 // Insert a word into the BST. Ignores duplicates.
 bool Insert(const char *word, WordNode **r)
 {
-    // edge cases traiting
+    // handle edge cases
     if (r == NULL)
     {
         return false;
@@ -90,26 +90,40 @@ bool Insert(const char *word, WordNode **r)
     }
 
     // algorithm logic
-    if (*r == NULL)
+    WordNode *p = NULL;
+    WordNode *q = NULL;
+
+    Search(word, *r, &p, &q);
+    if (p != NULL)
+    {
+        return false;
+    }
+
+    if (q == NULL)
     {
         *r = AllocateNode();
         Ass_Node_Val(*r, word);
         return true;
     }
 
-    if (strcmp(word, NodeValue(*r)) == 0)
-        return false;
-
-    if (strcmp(word, NodeValue(*r)) < 0)
-        return Insert(word, &((*r)->left));
+    if (strcmp(word, NodeValue(q)) < 0)
+    {
+        Ass_LC(q, AllocateNode());
+        Ass_Node_Val(LC(q), word);
+    }
     else
-        return Insert(word, &((*r)->right));
+    {
+        Ass_RC(q, AllocateNode());
+        Ass_Node_Val(RC(q), word);
+    }
+
+    return true;
 }
 
 // Print the BST in-order (alphabetically).
 void Inorder(WordNode *r)
 {
-    // edge cases traiting
+    // handle edge cases
     if (r == NULL)
     {
         return;
@@ -137,7 +151,7 @@ void Inorder(WordNode *r)
 // Free all nodes in the BST and set root to NULL.
 void FreeTree(WordNode **r)
 {
-    // edge cases traiting
+    // handle edge cases
     if (r == NULL || *r == NULL)
     {
         if (r == NULL)
@@ -157,7 +171,7 @@ void FreeTree(WordNode **r)
 // Copy all words from src tree into dest tree.
 void CopyTree(WordNode *src, WordNode **dest)
 {
-    // edge cases traiting
+    // handle edge cases
     if (src == NULL || dest == NULL)
     {
         if (dest == NULL)
@@ -182,3 +196,84 @@ void CopyTree(WordNode *src, WordNode **dest)
     CopyTree(LC(src), dest);
     CopyTree(RC(src), dest);
 }
+
+// Balanced BST helpers (array -> sort -> median-first insertion)
+void CollectWords(WordNode *root, char ***array, size_t *size, size_t *capacity)
+{
+    if (array == NULL || size == NULL || capacity == NULL)
+    {
+        fprintf(stderr, "CollectWords: output parameters must not be NULL\n");
+        return;
+    }
+
+    if (root == NULL)
+    {
+        return;
+    }
+
+    CollectWords(LC(root), array, size, capacity);
+
+    if (*capacity == 0)
+    {
+        *capacity = 8;
+        *array = (char **)malloc((*capacity) * sizeof(char *));
+        if (*array == NULL)
+        {
+            fprintf(stderr, "CollectWords: out of memory\n");
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    if (*size >= *capacity)
+    {
+        size_t new_capacity = (*capacity) * 2;
+        char **tmp = (char **)realloc(*array, new_capacity * sizeof(char *));
+        if (tmp == NULL)
+        {
+            fprintf(stderr, "CollectWords: out of memory\n");
+            exit(EXIT_FAILURE);
+        }
+        *array = tmp;
+        *capacity = new_capacity;
+    }
+
+    size_t len = strlen(NodeValue(root));
+    char *copy = (char *)malloc(len + 1);
+    if (copy == NULL)
+    {
+        fprintf(stderr, "CollectWords: out of memory\n");
+        exit(EXIT_FAILURE);
+    }
+    strcpy(copy, NodeValue(root));
+
+    (*array)[*size] = copy;
+    (*size)++;
+
+    CollectWords(RC(root), array, size, capacity);
+}
+
+// helper function to use in SortWords function (used in qsort function, for more infos visit: https://www.geeksforgeeks.org/c/qsort-function-in-c/)
+static int comp(const void *a, const void *b) {
+    return (*(char *)a - *(char *)b);
+}
+
+void SortWords(char **array, size_t size)
+{
+    // directly use qsort built-in function
+    qsort(*array, size, sizeof((*array)[0]), comp);
+}
+
+void MedianInsert(char **array, size_t left, size_t right, WordNode **root)
+{
+    if(left > right)
+        return;
+    
+    int mid = left + (right - left) / 2; // use this math-correct formula to avoid overflow in large numbers.
+
+    Insert(root, array[mid]);
+
+    // logic - insert the median of the array at the bst recursively to ensure a balanced bst. 
+    MedianInsert(array, left, mid - 1, root);
+    MedianInsert(array, mid + 1, right, root);
+}
+

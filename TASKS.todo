@@ -7,9 +7,9 @@ PHASE 1: CORE LOGIC (Using Abstract Machines)
 NOTE: All functions in Phase 1 are currently left as TODO placeholders in the source files. Do not mark any task as done until you implement the function bodies.
 
 [ ] utils.c
-    [ ] normalize(word)
+    [x] normalize(word)
     [ ] is_stopword(word)
-    [ ] is_empty(word)
+    [x] is_empty(word)
 
 [x] word_bst.c
     [x] Search(word, r, &p, &q)
@@ -17,23 +17,29 @@ NOTE: All functions in Phase 1 are currently left as TODO placeholders in the so
     [x] Inorder(r)
     [x] FreeTree(&r)
     [x] CopyTree(src, &dest)
+    [x] CollectWords(root, &array, &size)
+    [x] SortWords(array, size)
+    [x] MedianInsert(array, left, right, &root)
 
-[ ] sentence_ll.c
-    [ ] CreateSentenceList()
-    [ ] AddSentence(&list, bst_root)
-    [ ] GetSentence(list, id)
-    [ ] PrintSentences(list)
-    [ ] FreeSentenceList(&list)
+[x] sentence_ll.c
+    [x] CreateSentenceList()
+    [x] AddSentence(&list, bst_root)
+    [x] GetSentence(list, id)
+    [x] PrintSentences(list)
+    [x] FreeSentenceList(&list)
 
-[ ] paragraph_ll.c
-    [ ] CreateParagraphList()
-    [ ] AddParagraph(&list, sentence_list)
-    [ ] GetParagraph(list, id)
-    [ ] PrintParagraphs(list)
-    [ ] FreeParagraphList(&list)
+[x] paragraph_ll.c
+    [x] CreateParagraphList()
+    [x] AddParagraph(&list, sentence_list)
+    [x] GetParagraph(list, id)
+    [x] PrintParagraphs(list)
+    [x] FreeParagraphList(&list)
+    [x] BuildIndex(list, &index)
+    [x] GetParagraphByIndex(index, i)
 
 [ ] file_parser.c
     [ ] ParseFile(filename)
+    [ ] Two-pass sentence build (collect, sort, median insert)
 
 [ ] sets_ops.c — word level
     [ ] WordUnion(A, B)
@@ -61,7 +67,7 @@ PHASE 2: CONNECTIONS
 
 [ ] Selection helpers
     [ ] select_sentence(list)
-    [ ] select_paragraph(list)
+    [ ] select_paragraph(index)
     [ ] select_file()
 
 [ ] Operation dispatch

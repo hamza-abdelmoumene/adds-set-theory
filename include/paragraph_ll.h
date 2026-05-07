@@ -14,19 +14,24 @@
  * @struct ParagraphNode
  * @brief Represents a paragraph, containing a list of sentences.
  */
-typedef struct ParagraphNode {
-    int id;                       // Position of the paragraph
-    SentenceList val;             // Sentences contained in this paragraph
-    struct ParagraphNode *addr;   // Pointer to the next paragraph
+typedef struct ParagraphNode
+{
+    int id;                     // Position of the paragraph
+    SentenceList val;           // Sentences contained in this paragraph
+    struct ParagraphNode *addr; // Pointer to the next paragraph
 } ParagraphNode;
 
 /**
  * @struct ParagraphList
- * @brief A linked list of paragraphs.
+ * @brief A linked list of paragraphs with a parallel index for O(1) access.
  */
-typedef struct ParagraphList {
+typedef struct ParagraphList
+{
     ParagraphNode *head;
-    int count;                    // Total number of paragraphs
+    ParagraphNode *tail;
+    int count;             // Total number of paragraphs
+    ParagraphNode **index; // Dynamic array of node pointers (by id)
+    size_t capacity;       // Allocated size of index array
 } ParagraphList;
 
 // Linked List Abstract Machine Operations are inherited from sentence_ll.h
@@ -46,5 +51,11 @@ void PrintParagraphs(ParagraphList list);
 
 // Free all paragraphs, sentences, and BSTs from memory.
 void FreeParagraphList(ParagraphList *list);
+
+// Build the index array after parsing for O(1) access by index.
+void BuildIndex(ParagraphList *list);
+
+// Retrieve a paragraph node by index from the built array.
+ParagraphNode *GetParagraphByIndex(ParagraphList *list, int i);
 
 #endif // PARAGRAPH_LL_H
