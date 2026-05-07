@@ -30,14 +30,14 @@ The program runs entirely in the terminal with a simple menu.
 ## Data structures used
 
 - **BST (Binary Search Tree)** — one tree per sentence, each node is a unique word.
-  Chosen because insert and search are O(log n), and duplicates are rejected naturally,
-  which matches the definition of a set.
+  Words are collected into a dynamic array, sorted, then inserted median-first to keep
+  the tree balanced (height O(log n)) without AVL overhead.
 
 - **Linked List (Sentences)** — chains the sentences of a paragraph together dynamically.
-  Chosen because the number of sentences is not known in advance.
+  After parsing, a parallel index array provides O(1) sentence access by id.
 
 - **Linked List (Paragraphs)** — chains the paragraphs of a file together dynamically.
-  Chosen because the number of paragraphs is not known in advance.
+  After parsing, a parallel index array provides O(1) paragraph access by id.
 
 ---
 
@@ -140,6 +140,7 @@ from the same file or from two different files.
 - Sentences are delimited by periods '.'.
 - Paragraphs are delimited by newline characters '\n'.
 - The result of each operation is printed in alphabetical order (inorder traversal).
+- Sentences are built with a two-pass flow: collect words, sort, then median-insert.
 - Memory is freed properly at exit.
 
 ---

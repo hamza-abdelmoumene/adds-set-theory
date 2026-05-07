@@ -15,7 +15,7 @@ Implement the BST abstract machine. Every other module depends on this.
 | `Inorder(r)` | recursive inorder, prints words alphabetically |
 | `FreeTree(&r)` | postorder free, sets r to NULL |
 | `CopyTree(src, &dest)` | inorder traversal of src, inserts each word into dest |
-| `CollectWords(root, &array, &size)` | collects words into a dynamic array |
+| `CollectWords(root, &array, &size, &capacity)` | collects words into a dynamic array |
 | `SortWords(array, size)` | sorts words alphabetically (qsort + strcmp) |
 | `MedianInsert(array, left, right, &root)` | inserts words median-first to build a balanced BST |
 
@@ -39,7 +39,9 @@ Linked list of sentences. Each sentence holds a BST root.
 |---|---|
 | `CreateSentenceList()` | returns an empty SentenceList |
 | `AddSentence(&list, bst_root)` | appends a new SentenceNode at the end |
-| `GetSentence(list, id)` | returns the SentenceNode at position id |
+| `GetSentence(list, id)` | returns the SentenceNode at position id (linear scan) |
+| `BuildSentenceIndex(&list)` | builds a SentenceNode* index array for O(1) access |
+| `GetSentenceByIndex(&list, i)` | returns the SentenceNode* at index i |
 | `PrintSentences(list)` | prints all sentences with their words |
 | `FreeSentenceList(&list)` | frees all nodes and their BSTs |
 
@@ -49,13 +51,13 @@ Linked list of paragraphs. Each paragraph holds a SentenceList.
 
 | Function | Description |
 |---|---|
-| `CreateParagraphList()` | returns an empty ParagraphList and initializes the index array |
-| `AddParagraph(&list, sentence_list)` | appends a new ParagraphNode and stores it in the index array |
-| `GetParagraph(list, id)` | returns the ParagraphNode at position id in O(1) using the index array |
+| `CreateParagraphList()` | returns an empty ParagraphList |
+| `AddParagraph(&list, sentence_list)` | appends a new ParagraphNode at the end |
+| `GetParagraph(list, id)` | returns the ParagraphNode at position id (linear scan) |
 | `PrintParagraphs(list)` | prints all paragraphs with their sentences |
 | `FreeParagraphList(&list)` | frees all nodes, sentence lists, BSTs, and the index array |
-| `BuildIndex(list, &index)` | walks the list and builds the index array |
-| `GetParagraphByIndex(index, i)` | returns the ParagraphNode pointer at index i |
+| `BuildIndex(&list)` | walks the list and builds the index array |
+| `GetParagraphByIndex(&list, i)` | returns the ParagraphNode pointer at index i |
 
 Paragraphs use a linked list plus a parallel dynamic array of node pointers (`index`) for O(1) access by id during set operations. After parsing, BuildIndex walks the list once to fill the array; menu selection uses the index array for O(1) access.
 
@@ -73,7 +75,9 @@ Parsing logic (two-pass per sentence):
 - Build a balanced BST using MedianInsert
 - `.` → end of sentence → save BST as SentenceNode → reset sentence storage
 - `\n` → end of paragraph → save SentenceList as ParagraphNode → reset list
+- BuildSentenceIndex after finishing each paragraph
 - `EOF` → flush remaining word, sentence, paragraph if not empty
+- BuildIndex after parsing completes
 
 ### 1.6 sets_ops.c
 
@@ -119,11 +123,11 @@ Write helper functions in `main.c` or a separate `ui.c`:
 
 | Function | Description |
 |---|---|
-| `select_sentence(list)` | shows sentences, prompts user to pick one by id |
+| `select_sentence(list)` | shows sentences, prompts user to pick one by id or index |
 | `select_paragraph(index)` | shows paragraphs, prompts user to pick one by index |
 | `select_file()` | prompts user to pick file 1 or file 2 |
 
-Selection logic should use the paragraph index array built by BuildIndex instead of walking the linked list.
+Selection logic should use the paragraph index array built by BuildIndex (and sentence index when available) instead of walking the linked list.
 
 ### 2.3 Operation dispatch
 

@@ -75,4 +75,4 @@ dkms.conf
 *.dwo
 >>>>>>> b24cddfacb491fc11f97ac628905b4cdc2ff3552
 
-hint.md
+hints.md

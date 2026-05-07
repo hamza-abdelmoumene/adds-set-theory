@@ -17,7 +17,7 @@ NOTE: All functions in Phase 1 are currently left as TODO placeholders in the so
     [x] Inorder(r)
     [x] FreeTree(&r)
     [x] CopyTree(src, &dest)
-    [x] CollectWords(root, &array, &size)
+    [x] CollectWords(root, &array, &size, &capacity)
     [x] SortWords(array, size)
     [x] MedianInsert(array, left, right, &root)
 
@@ -25,6 +25,8 @@ NOTE: All functions in Phase 1 are currently left as TODO placeholders in the so
     [x] CreateSentenceList()
     [x] AddSentence(&list, bst_root)
     [x] GetSentence(list, id)
+    [x] BuildSentenceIndex(&list)
+    [x] GetSentenceByIndex(&list, i)
     [x] PrintSentences(list)
     [x] FreeSentenceList(&list)
 
@@ -34,12 +36,12 @@ NOTE: All functions in Phase 1 are currently left as TODO placeholders in the so
     [x] GetParagraph(list, id)
     [x] PrintParagraphs(list)
     [x] FreeParagraphList(&list)
-    [x] BuildIndex(list, &index)
-    [x] GetParagraphByIndex(index, i)
+    [x] BuildIndex(&list)
+    [x] GetParagraphByIndex(&list, i)
 
-[ ] file_parser.c
-    [ ] ParseFile(filename)
-    [ ] Two-pass sentence build (collect, sort, median insert)
+[x] file_parser.c
+    [x] ParseFile(filename)
+    [x] Two-pass sentence build (collect, sort, median insert)
 
 [ ] sets_ops.c — word level
     [ ] WordUnion(A, B)
