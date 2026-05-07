@@ -24,13 +24,16 @@ typedef struct SentenceNode
 
 /**
  * @struct SentenceList
- * @brief A linked list of sentences.
+ * @brief A linked list of sentences with a parallel index array for O(1) access.
+ *        Mirrors the same design as ParagraphList.
  */
 typedef struct SentenceList
 {
-    SentenceNode *head;
-    SentenceNode *tail;
-    int count; // Total number of sentences
+    SentenceNode  *head;
+    SentenceNode  *tail;
+    int            count;    // Total number of sentences
+    SentenceNode **index;    // Dynamic array of node pointers (by id) for O(1) access
+    size_t         capacity; // Allocated size of index array
 } SentenceList;
 
 // -----------------------------------------------------------------------------
@@ -49,12 +52,12 @@ static inline void *AllocateImpl(size_t size)
     return ptr;
 }
 
-#define Allocate(p) ((p) = AllocateImpl(sizeof(*(p))))
-#define Free(p) free(p)
-#define Ass_val(p, v) ((p)->val = (v))
-#define Ass_adr(p, q) ((p)->addr = (q))
-#define Value(p) ((p)->val)
-#define Next(p) ((p)->addr)
+#define Allocate(p)    ((p) = AllocateImpl(sizeof(*(p))))
+#define Free(p)        free(p)
+#define Ass_val(p, v)  ((p)->val  = (v))
+#define Ass_adr(p, q)  ((p)->addr = (q))
+#define Value(p)       ((p)->val)
+#define Next(p)        ((p)->addr)
 #endif // ABSTRACT_MACHINE_LIST_MACROS
 
 // Initialize an empty SentenceList.
@@ -63,13 +66,19 @@ SentenceList CreateSentenceList(void);
 // Append a new sentence (represented by its word BST) to the list.
 void AddSentence(SentenceList *list, WordNode *bst_root);
 
-// Retrieve a sentence node by its ID.
+// Retrieve a sentence node by its ID (linear scan fallback).
 SentenceNode *GetSentence(SentenceList list, int id);
+
+// Build the index array for O(1) access by sentence id.
+void BuildSentenceIndex(SentenceList *list);
+
+// Retrieve a sentence node in O(1) using the index array.
+SentenceNode *GetSentenceByIndex(SentenceList *list, int i);
 
 // Print all sentences in the list and their distinct words.
 void PrintSentences(SentenceList list);
 
-// Free all sentences and their associated BSTs from memory.
+// Free all sentences, their associated BSTs, and the index array from memory.
 void FreeSentenceList(SentenceList *list);
 
 #endif // SENTENCE_LL_H

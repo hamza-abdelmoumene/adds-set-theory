@@ -5,45 +5,43 @@
 // Initialize an empty SentenceList.
 SentenceList CreateSentenceList(void)
 {
-    SentenceList list = {NULL, NULL, 0};
-
+    SentenceList list = {NULL, NULL, 0, NULL, 0};
     return list;
 }
 
-// Append a new sentence (represented by its word BST) to the list using abstract machine operations.
+// Append a new sentence (represented by its word BST) to the list.
 void AddSentence(SentenceList *list, WordNode *bst_root)
 {
     SentenceNode *new_node;
     Allocate(new_node);
     Ass_val(new_node, bst_root);
     Ass_adr(new_node, NULL);
-    new_node->id = list->count;
+    new_node->id = list->count; // id assigned before increment
 
-    if(list->head == NULL)
+    if (list->head == NULL)
     {
         list->head = new_node;
         list->tail = new_node;
-        return; 
     }
-    
+    else
+    {
+        Ass_adr(list->tail, new_node);
+        list->tail = new_node;
+    }
 
-    
-    Ass_adr(list->tail, new_node);
-    list->tail = new_node;
     list->count++;
-
 }
 
-// Retrieve a sentence node by its ID.
+// Retrieve a sentence node by its ID (linear scan fallback).
 SentenceNode *GetSentence(SentenceList list, int id)
 {
-    if(id >= list.count || id < 0)
+    if (id < 0 || id >= list.count)
         return NULL;
 
     SentenceNode *current = list.head;
-    while(current != NULL)
+    while (current != NULL)
     {
-        if(current->id == id)
+        if (current->id == id)
             return current;
         current = Next(current);
     }
@@ -51,33 +49,75 @@ SentenceNode *GetSentence(SentenceList list, int id)
     return NULL;
 }
 
+// Build the index array after all sentences are added for O(1) access by id.
+void BuildSentenceIndex(SentenceList *list)
+{
+    // guard against empty list — malloc(0) is UB on some platforms
+    if (list->count == 0)
+    {
+        list->index = NULL;
+        list->capacity = 0;
+        return;
+    }
+
+    list->index = (SentenceNode **)malloc(list->count * sizeof(SentenceNode *));
+    if (list->index == NULL)
+    {
+        fprintf(stderr, "BuildSentenceIndex: out of memory\n");
+        exit(EXIT_FAILURE);
+    }
+
+    list->capacity = list->count;
+
+    SentenceNode *current = list->head;
+    while (current != NULL)
+    {
+        list->index[current->id] = current;
+        current = Next(current);
+    }
+}
+
+// Retrieve a sentence node in O(1) using the index array.
+SentenceNode *GetSentenceByIndex(SentenceList *list, int i)
+{
+    if (i < 0 || i >= list->count)
+        return NULL;
+
+    return list->index[i];
+}
+
 // Print all sentences in the list and their distinct words.
 void PrintSentences(SentenceList list)
 {
     SentenceNode *current = list.head;
-    while(current != NULL)
+    while (current != NULL)
     {
-        printf("Sentence %d: ", current->id);
+        printf("  Sentence %d: ", current->id);
         Inorder(current->val);
         printf("\n");
         current = Next(current);
     }
-    return;
 }
 
-// Free all sentences and their associated BSTs from memory.
+// Free all sentences, their associated BSTs, and the index array from memory.
 void FreeSentenceList(SentenceList *list)
 {
     SentenceNode *current = list->head;
 
-    while(current != NULL)
+    while (current != NULL)
     {
         SentenceNode *temp = Next(current);
         FreeTree(&current->val);
         Free(current);
         current = temp;
     }
+
+    // free the index array itself (the nodes it pointed to are already freed above)
+    free(list->index);
+
     list->head = NULL;
     list->tail = NULL;
+    list->index = NULL;
     list->count = 0;
+    list->capacity = 0;
 }
