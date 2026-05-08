@@ -6,9 +6,8 @@ PHASE 1: CORE LOGIC (Using Abstract Machines)
 
 NOTE: All functions in Phase 1 are currently left as TODO placeholders in the source files. Do not mark any task as done until you implement the function bodies.
 
-[ ] utils.c
+[x] utils.c
     [x] normalize(word)
-    [ ] is_stopword(word)
     [x] is_empty(word)
 
 [x] word_bst.c

@@ -12,7 +12,7 @@
  * Incorporates strict Abstract Machine naming conventions.
  */
 
-#define MAX_WORD 100
+#define MAX_WORD 256
 
 /**
  * @struct WordNode
