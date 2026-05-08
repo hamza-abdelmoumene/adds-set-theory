@@ -26,7 +26,7 @@ typedef struct WordNode
 } WordNode;
 
 // -----------------------------------------------------------------------------
-// Abstract Machine Operations for Binary Tree
+// ************** Abstract Machine Operations for Binary Tree ******************
 // -----------------------------------------------------------------------------
 
 #define Ass_LC(p, q) ((p)->left = (q))
@@ -60,7 +60,7 @@ void Search(const char *word, WordNode *r, WordNode **p, WordNode **q);
 // Insert a word into the BST. Ignores duplicates.
 bool Insert(const char *word, WordNode **r);
 
-// Print the BST in-order (alphabetically).
+// Print the BS int            count;T in-order (alphabetically).
 void Inorder(WordNode *r);
 
 // Free all nodes in the BST and set root to NULL.

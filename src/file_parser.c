@@ -80,7 +80,6 @@ static void FlushParagraph(ParserState *s, ParagraphList *result)
     if (s->current_sentences.count == 0)
         return;
 
-    // build the sentence index before handing ownership to the paragraph node
     BuildSentenceIndex(&s->current_sentences);
 
     AddParagraph(result, s->current_sentences);
@@ -118,16 +117,16 @@ ParagraphList ParseFile(const char *filename)
     int c;
     while ((c = fgetc(file)) != EOF)
     {
-        if (c == ' ' || c == '\t')
+        if (c == ' ' || c == '\t') // detect the end of a word
         {
             FlushWord(&s);
         }
-        else if (c == '.')
+        else if (c == '.') // detect the end of a sentence
         {
             FlushWord(&s);
             FlushSentence(&s);
         }
-        else if (c == '\n')
+        else if (c == '\n') // detect the end of a paragraph
         {
             FlushWord(&s);
             FlushSentence(&s);
@@ -140,7 +139,6 @@ ParagraphList ParseFile(const char *filename)
         }
     }
 
-    // Sentence must be flushed before paragraph to avoid losing the last sentence.
     FlushWord(&s);
     FlushSentence(&s);
     FlushParagraph(&s, &result);

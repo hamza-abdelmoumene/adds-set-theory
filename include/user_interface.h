@@ -13,5 +13,5 @@
   *  */
 
 void animation(void);
-
+void menu(void);
 #endif /* USER_INTERFACE_H */
