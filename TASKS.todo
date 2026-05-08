@@ -42,20 +42,20 @@ NOTE: All functions in Phase 1 are currently left as TODO placeholders in the so
     [x] ParseFile(filename)
     [x] Two-pass sentence build (collect, sort, median insert)
 
-[ ] sets_ops.c — word level
-    [ ] WordUnion(A, B)
-    [ ] WordIntersection(A, B)
-    [ ] WordDifference(A, B)
+[x] sets_ops.c — word level
+    [x] WordUnion(A, B)
+    [x] WordIntersection(A, B)
+    [x] WordDifference(A, B)
 
-[ ] sets_ops.c — sentence level
-    [ ] SentenceUnion(A, B)
-    [ ] SentenceIntersection(A, B)
-    [ ] SentenceDifference(A, B)
+[x] sets_ops.c — sentence level
+    [x] SentenceUnion(A, B)
+    [x] SentenceIntersection(A, B)
+    [x] SentenceDifference(A, B)
 
-[ ] sets_ops.c — paragraph level
-    [ ] ParagraphUnion(A, B)
-    [ ] ParagraphIntersection(A, B)
-    [ ] ParagraphDifference(A, B)
+[x] sets_ops.c — paragraph level
+    [x] ParagraphUnion(A, B)
+    [x] ParagraphIntersection(A, B)
+    [x] ParagraphDifference(A, B)
 
 
 PHASE 2: CONNECTIONS
