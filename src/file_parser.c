@@ -32,9 +32,9 @@ static void FlushWord(ParserState *s)
     s->word[s->word_len] = '\0';
     s->word_len = 0;
 
-    normalize(s->word);
+    NormalizeWord(s->word);
 
-    if (is_empty(s->word))
+    if (IsBlank(s->word))
         return;
 
     if (s->word_count >= s->word_capacity)
@@ -69,8 +69,8 @@ static void FlushSentence(ParserState *s)
         free(s->words[i]);
 
     free(s->words);
-    s->words        = NULL;
-    s->word_count   = 0;
+    s->words = NULL;
+    s->word_count = 0;
     s->word_capacity = 0;
 }
 
@@ -108,11 +108,11 @@ ParagraphList ParseFile(const char *filename)
     }
 
     ParserState s;
-    s.word_len           = 0;
-    s.words              = NULL;
-    s.word_count         = 0;
-    s.word_capacity      = 0;
-    s.current_sentences  = CreateSentenceList();
+    s.word_len = 0;
+    s.words = NULL;
+    s.word_count = 0;
+    s.word_capacity = 0;
+    s.current_sentences = CreateSentenceList();
 
     int c;
     while ((c = fgetc(file)) != EOF)

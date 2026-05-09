@@ -1,17 +1,25 @@
 #ifndef USER_INTERFACE_H
 #define USER_INTERFACE_H
 
+/**
+ *  @file user_interface.h
+ *  @brief
+ *  Contains the complete intro animation sequence.
+ *  Blocks until the final "Press any key to exit..." prompt is acknowledged.
+ *  Includes the graphical experience for the user such as menus, separators,
+ *  and prompts.
+ *  No hard logic here.
+ *  */
 
-/** 
-  *  @file user_interface.h
-  *  @brief 
-  *  contains the complete intro animation sequence.
-  *  Blocks until the final "Press any key to exit..." prompt is acknowledged.
-  *  icnlude everything related to the graphical experience for the user such: 
-  *  the menu, the separators, and the prompts ...
-  *  no hard logic here
-  *  */
+/**
+ * @brief Displays the application's introductory animation.
+ * Clears the screen and plays a sequence of text and graphical effects.
+ */
+void RunAnimation(void);
 
-void animation(void);
-void menu(void);
+/**
+ * @brief Renders and handles interaction for the main application menu.
+ * Contains the main interactive loop for the user interface.
+ */
+void RunMenu(void);
 #endif /* USER_INTERFACE_H */
