@@ -2,14 +2,14 @@
 #include <stdlib.h>
 #include "../include/sentence_ll.h"
 
-// Initialize an empty SentenceList.
+
 SentenceList CreateSentenceList(void)
 {
     SentenceList list = {NULL, NULL, 0, NULL, 0};
     return list;
 }
 
-// Append a new sentence (represented by its word BST) to the list.
+
 void AddSentence(SentenceList *list, WordNode *bst_root, const char *original)
 {
     if (list == NULL)
@@ -42,7 +42,7 @@ void AddSentence(SentenceList *list, WordNode *bst_root, const char *original)
     list->count++;
 }
 
-// Retrieve a sentence node by its ID (linear scan fallback).
+
 SentenceNode *GetSentence(SentenceList list, int id)
 {
     if (id < 0 || id >= list.count)
@@ -59,7 +59,7 @@ SentenceNode *GetSentence(SentenceList list, int id)
     return NULL;
 }
 
-// Build the index array after all sentences are added for O(1) access by id.
+
 void BuildSentenceIndex(SentenceList *list)
 {
     if (list == NULL)
@@ -68,7 +68,7 @@ void BuildSentenceIndex(SentenceList *list)
         return;
     }
 
-    // guard against empty list — malloc(0) is UB on some platforms
+    
     if (list->count == 0)
     {
         list->index = NULL;
@@ -89,7 +89,7 @@ void BuildSentenceIndex(SentenceList *list)
     }
 }
 
-// Retrieve a sentence node in O(1) using the index array.
+
 SentenceNode *GetSentenceByIndex(SentenceList *list, int i)
 {
     if (list == NULL || i < 0 || i >= list->count)
@@ -98,7 +98,7 @@ SentenceNode *GetSentenceByIndex(SentenceList *list, int i)
     return list->index[i];
 }
 
-// Print all sentences in the list and their distinct words.
+
 void PrintSentences(SentenceList list)
 {
     SentenceNode *current = list.head;
@@ -111,7 +111,7 @@ void PrintSentences(SentenceList list)
     }
 }
 
-// Free all sentences, their associated BSTs, and the index array from memory.
+
 void FreeSentenceList(SentenceList *list)
 {
     if (list == NULL)
@@ -128,7 +128,7 @@ void FreeSentenceList(SentenceList *list)
         current = temp;
     }
 
-    // free the index array itself (the nodes it pointed to are already freed above)
+    
     free(list->index);
 
     list->head = NULL;

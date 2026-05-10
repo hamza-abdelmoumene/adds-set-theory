@@ -2,14 +2,14 @@
 #include <stdlib.h>
 #include "../include/paragraph_ll.h"
 
-// Initialize an empty ParagraphList.
+
 ParagraphList CreateParagraphList(void)
 {
     ParagraphList list = {NULL, NULL, 0, NULL, 0};
     return list;
 }
 
-// Append a new paragraph (represented by its sentence list) to the list.
+
 void AddParagraph(ParagraphList *list, SentenceList sentence_list, const char *original)
 {
     if (list == NULL)
@@ -39,7 +39,7 @@ void AddParagraph(ParagraphList *list, SentenceList sentence_list, const char *o
     list->count++;
 }
 
-// Retrieve a paragraph node by its ID (linear scan fallback).
+
 ParagraphNode *GetParagraph(ParagraphList list, int id)
 {
     if (id < 0 || id >= list.count)
@@ -56,7 +56,7 @@ ParagraphNode *GetParagraph(ParagraphList list, int id)
     return NULL;
 }
 
-// Print all paragraphs, visualizing their sentences and words.
+
 void PrintParagraphs(ParagraphList list)
 {
     ParagraphNode *current = list.head;
@@ -69,7 +69,7 @@ void PrintParagraphs(ParagraphList list)
     }
 }
 
-// Free all paragraphs, sentences, and BSTs from memory.
+
 void FreeParagraphList(ParagraphList *list)
 {
     if (list == NULL)
@@ -96,7 +96,7 @@ void FreeParagraphList(ParagraphList *list)
     list->capacity = 0;
 }
 
-// Build the index array after parsing for O(1) access by index.
+
 void BuildIndex(ParagraphList *list)
 {
     if (list == NULL)
@@ -125,7 +125,7 @@ void BuildIndex(ParagraphList *list)
     }
 }
 
-// Retrieve a paragraph node in O(1) using the index array.
+
 ParagraphNode *GetParagraphByIndex(ParagraphList *list, int i)
 {
     if (list == NULL || i < 0 || i >= list->count)

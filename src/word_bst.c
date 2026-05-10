@@ -4,10 +4,10 @@
 #include <stdbool.h>
 #include "../include/word_bst.h"
 
-// Search for a word in the BST. Returns the node (p) and its parent (q).
+
 void Search(const char *word, WordNode *r, WordNode **p, WordNode **q)
 {
-    // handle edge cases
+    
     if (p == NULL || q == NULL)
     {
         PrintError("Search", "output pointers must not be NULL");
@@ -41,23 +41,23 @@ void Search(const char *word, WordNode *r, WordNode **p, WordNode **q)
     *p = r;
     *q = NULL;
 
-    // algorithm logic — iterative walk, track parent at each step
+    
     while (*p != NULL)
     {
         int cmp = strcmp(word, NodeValue(*p));
         if (cmp == 0)
-            return; // found — p points to the node, q to its parent
+            return; 
 
         *q = *p;
         *p = (cmp < 0) ? LC(*p) : RC(*p);
     }
-    // not found — p is NULL, q is the last visited node (future parent)
+    
 }
 
-// Insert a word into the BST. Ignores duplicates.
+
 bool Insert(const char *word, WordNode **r)
 {
-    // handle edge cases
+    
     if (r == NULL)
         return false;
 
@@ -79,25 +79,25 @@ bool Insert(const char *word, WordNode **r)
         return false;
     }
 
-    // algorithm logic
+    
     WordNode *p = NULL;
     WordNode *q = NULL;
 
     Search(word, *r, &p, &q);
     if (p != NULL)
-        return false; // duplicate — do nothing
+        return false; 
 
-    // allocate and fill the new node
+    
     WordNode *new_node = AllocateNode();
     Ass_Node_Val(new_node, word);
 
     if (q == NULL)
     {
-        *r = new_node; // tree was empty
+        *r = new_node; 
         return true;
     }
 
-    // attach to parent on the correct side
+    
     if (strcmp(word, NodeValue(q)) < 0)
         Ass_LC(q, new_node);
     else
@@ -106,22 +106,22 @@ bool Insert(const char *word, WordNode **r)
     return true;
 }
 
-// Print the BST in-order (alphabetically).
+
 void Inorder(WordNode *r)
 {
     if (r == NULL)
         return;
 
-    // algorithm logic — Left → Root → Right
+    
     Inorder(LC(r));
     printf("%s ", NodeValue(r));
     Inorder(RC(r));
 }
 
-// Free all nodes in the BST and set root to NULL.
+
 void FreeTree(WordNode **r)
 {
-    // handle edge cases
+    
     if (r == NULL || *r == NULL)
     {
         if (r == NULL)
@@ -129,17 +129,17 @@ void FreeTree(WordNode **r)
         return;
     }
 
-    // algorithm logic — post-order: free children before self
+    
     FreeTree(&((*r)->left));
     FreeTree(&((*r)->right));
     FreeNode(*r);
     *r = NULL;
 }
 
-// Copy all words from src tree into dest tree.
+
 void CopyTree(WordNode *src, WordNode **dest)
 {
-    // handle edge cases
+    
     if (src == NULL)
         return;
 
@@ -149,13 +149,13 @@ void CopyTree(WordNode *src, WordNode **dest)
         return;
     }
 
-    // algorithm logic — pre-order traversal of src, insert each word into dest
+    
     Insert(NodeValue(src), dest);
     CopyTree(LC(src), dest);
     CopyTree(RC(src), dest);
 }
 
-// Collect all words from the BST into a dynamically growing array (in-order).
+
 void CollectWords(WordNode *root, char ***array, size_t *size, size_t *capacity)
 {
     if (array == NULL || size == NULL || capacity == NULL)
@@ -167,10 +167,10 @@ void CollectWords(WordNode *root, char ***array, size_t *size, size_t *capacity)
     if (root == NULL)
         return;
 
-    // traverse left first (in-order)
+    
     CollectWords(LC(root), array, size, capacity);
 
-    // grow the array if needed
+    
     if (*capacity == 0)
     {
         *capacity = 8;
@@ -183,20 +183,20 @@ void CollectWords(WordNode *root, char ***array, size_t *size, size_t *capacity)
         *capacity = new_cap;
     }
 
-    // copy the word string into the array
+    
     char *copy = CheckedStrDup(NodeValue(root), "CollectWords");
     (*array)[(*size)++] = copy;
 
     CollectWords(RC(root), array, size, capacity);
 }
 
-// Comparator for qsort: compares two char* strings.
+
 static int comp(const void *a, const void *b)
 {
     return strcmp(*(const char **)a, *(const char **)b);
 }
 
-// Sort a char** array alphabetically using qsort.
+
 void SortWords(char **array, size_t size)
 {
     if (array == NULL || size == 0)
@@ -205,10 +205,10 @@ void SortWords(char **array, size_t size)
     qsort(array, size, sizeof(char *), comp);
 }
 
-// Insert words median-first into a BST to guarantee a balanced tree.
+
 void MedianInsert(char **array, size_t left, size_t right, WordNode **root)
 {
-    // Guard: stop when the range is empty.
+    
     if (left > right)
         return;
 
@@ -216,7 +216,7 @@ void MedianInsert(char **array, size_t left, size_t right, WordNode **root)
 
     Insert(array[mid], root);
 
-    // recurse on left half — guard against underflow before calling
+    
     if (mid > left)
         MedianInsert(array, left, mid - 1, root);
 

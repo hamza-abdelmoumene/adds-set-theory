@@ -77,6 +77,7 @@ The core data structures strictly follow the "Machine Abstraite" macros defined 
 | `CheckedMalloc(size, context)` | Safe allocation. | Wraps `malloc`, normalizes zero-byte requests to 1 byte, and terminates through `HandleError` if allocation fails. |
 | `CheckedRealloc(ptr, size, context)` | Safe reallocation. | Wraps `realloc` and terminates through `HandleError` on out-of-memory. |
 | `CheckedStrDup(s, context)` | Safe string duplication. | Duplicates strings using `CheckedMalloc`; returns `NULL` only when the source string is `NULL`. |
+| `IsReadableRegularFile(path)` | File-path validator. | Rejects empty paths, unreadable paths, and directories such as `tests/`; only regular readable files can be loaded. |
 | `SleepMillis(ms)` | Cross-platform sleep. | Suspends execution using `Sleep()` on Windows or `nanosleep()` on POSIX. |
 | `InitTerminal()` | Terminal initialization. | Enables ANSI escapes and UTF-8 codepage on Windows. No-op on POSIX. |
 | `ReadChar()` | Blocking key reader. | Sets terminal to raw mode, reads a single keystroke directly without waiting for Enter. |
@@ -138,7 +139,7 @@ Top-level linked list holding parsed files.
 | Function | Role | Logic |
 |----------|------|-------|
 | `CreateFileList()` | Initialization. | Returns empty FileList. |
-| `AddFile(&list, fname)` | Validates, parses, and appends. | Returns `0` for invalid input/unreadable paths, preventing fake loaded files with zero paragraphs. On success, allocates a `FileNode`, calls `ParseFile()`, links via tail, and returns `1`. |
+| `AddFile(&list, fname)` | Validates, parses, and appends. | Returns `0` for invalid input, unreadable paths, and directory paths, preventing fake loaded files with zero paragraphs. On success, allocates a `FileNode`, calls `ParseFile()`, links via tail, and returns `1`. |
 | `GetFileByIndex(...)` | Random access. | Returns `index[i]`. |
 | `FreeFileList(&list)` | Complete cleanup. | Frees everything recursively when exiting the application. |
 
@@ -156,6 +157,8 @@ Implements standard Set Theory operations (Union, Intersection, Difference) acro
 | `ParagraphUnion(A, B)` | Deep-copies A. Scans B; if paragraph not found in A (based on identical sentence lists), appends it. |
 | `ParagraphIntersection`| Scans A, appends deep-copies of paragraphs that have equivalents in B. |
 | `ParagraphDifference` | Scans A, appends deep-copies of paragraphs that DO NOT have equivalents in B. |
+| `WordCardinality`, `SentenceCardinality`, `ParagraphCardinality` | Return the size of a set result at the matching level. |
+| `WordIsSubset`, `SentenceIsSubset`, `ParagraphIsSubset` | Check whether one operand set is included in the other and feed the result metadata panel. |
 
 ### 4.9. `user_interface.c` — UI, Layout, & Animations
 Handles all visual rendering, ensuring the application stays within the 100-character centered box and never overflows.
@@ -166,12 +169,23 @@ Handles all visual rendering, ensuring the application stays within the 100-char
 | `DrawBox(rslots)` | View layout. | Draws the dual-pane ASCII box. Hard-clamps strings strictly to 48 columns using `TruncateVisible()` to guarantee no visual bleed or line-wrapping bugs. |
 | `DrawFullBox(rslots)` | Full-width result layout. | Draws a single 100-column rectangle without the ESI/ADDS/TP left panel, used by result display screens. |
 | `GenericMenu(...)` | Interactive engine. | Maps input keys (Arrows/Numbers/ESC) to selections and re-renders the `DrawBox` menu. |
+| `ShowShortcutsPopup()` | Help overlay. | Pressing `?` opens a compact shortcut panel from menus, file loading, file preview, and result screens. |
 | `MenuMain()` | Main selector. | Presents Load File, List Loaded Files, Set Operations, and Exit. The old Display Structure option was removed. |
 | `MenuOperation()` | Operation selector. | Shows each operation with spacing: the operation name plus plain-language definition on one line, and the mathematical definition on the next line. |
-| `ScreenLoadFile()` / `RunMenu()` | File loading flow. | Reads a path, rejects unreadable files with `Invalid path — file could not be opened.`, and only then shows loading and appends the file. |
+| `ScreenLoadFile()` / `RunMenu()` | File loading flow. | Keeps the cursor in the path input until Enter is pressed with text or ESC cancels. It rejects unreadable files and directories with `Invalid path — file could not be opened.` |
+| `ScreenExploreLoadedFiles()` | File explorer. | Lets the user choose a loaded file and inspect paragraph previews instead of only seeing file names. |
+| `ScreenShowFilePreview()` | Large-content preview. | Displays one compact row per paragraph, for example `Paragraph 1: The study of algorithms forms the foundation ...`, with paging for large files so text never overlaps. |
 | `ShowLoadingBar(...)` | Progress visualizer. | Renders a centered bordered progress panel with spinner, percentage, gradient fill, and expanding separator line. |
-| `ScreenShowResult(...)` | Result screen. | Uses `DrawFullBox`, wraps long result text, numbers displayed rows, and shows `∅` for empty results. |
+| `ScreenShowResult(...)` | Result screen. | Uses `DrawFullBox`, wraps long result text, numbers displayed rows, shows `∅` for empty results, and displays `|Result|`, `A ⊆ B`, and `B ⊆ A`. |
 | `ParagraphListToString`| Result formatting. | Safely stringifies Paragraph structures back into readable format by referring strictly to the `char *original` stored during parsing. |
+
+### 4.10. `tests/` — Test Fixtures
+The bundled test files are now longer and paragraph-heavy so the UI preview and paging logic can be exercised.
+
+| File | Purpose | Notes |
+|------|---------|-------|
+| `tests/test1.txt` | Long, repetitive paragraphs. | Stresses paragraph preview truncation, page navigation, and set operations on larger inputs. |
+| `tests/test2.txt` | Medium-length paragraphs. | Provides a second dataset for cross-file operations and subset checks. |
 
 ---
 
@@ -180,5 +194,10 @@ Handles all visual rendering, ensuring the application stays within the 100-char
 - **Set Equivalency over Memory Equality**: When comparing two sentences for intersection, they are considered equal if their unique Word BSTs are equal, not just if their original strings match. This allows robust set operations independently of minor punctuation differences.
 - **Centralized Error Handling**: Allocation failures and internal invalid inputs now route through `PrintError`, `HandleError`, `CheckedMalloc`, `CheckedRealloc`, and `CheckedStrDup` in `utils.c`.
 - **Invalid File Protection**: The UI and `AddFile` both reject unreadable paths before appending a `FileNode`, so invalid paths no longer appear as loaded files with zero paragraphs.
+- **Directory Rejection**: Paths that point to directories are rejected before parsing, even if the OS allows opening the directory handle.
+- **Explorable Loaded Files**: Loaded files can be selected and previewed paragraph-by-paragraph with compact summaries and pagination.
+- **Operation Metadata**: Operation results show cardinality and subset relationships for the two operands.
+- **Shortcut Help**: Pressing `?` opens a small help panel with navigation and input shortcuts.
+- **Comment-Free Source**: The implementation files keep the behavior in code and the explanation in this document, so the submitted source reads cleaner.
 - **Menu Back Behavior**: `ESC` from Set Operations submenus unwinds cleanly to the main menu instead of re-entering a redraw loop.
 - **Recursive Teardown**: Closing the application automatically unwinds `FileNode` → `ParagraphNode` → `SentenceNode` → `WordNode` memory paths, ensuring 0 leaks.

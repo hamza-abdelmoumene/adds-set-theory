@@ -5,11 +5,13 @@
 #include <string.h>
 #include <time.h>
 #include <ctype.h>
+#include <sys/stat.h>
 #include "../include/utils.h"
 
-/* ─────────────────────────────────────────────────────────────────────────────
- *  ERROR HANDLING
- * ───────────────────────────────────────────────────────────────────────────── */
+#ifndef S_ISREG
+#define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+#endif
+
 void PrintError(const char *context, const char *message)
 {
     const char *where = (context && context[0]) ? context : "Error";
@@ -58,15 +60,31 @@ char *CheckedStrDup(const char *s, const char *context)
     return copy;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
- *  CROSS-PLATFORM LAYER
- * ───────────────────────────────────────────────────────────────────────────── */
+int IsReadableRegularFile(const char *path)
+{
+    struct stat st;
+    FILE *file;
+
+    if (path == NULL || path[0] == '\0')
+        return 0;
+
+    if (stat(path, &st) != 0 || !S_ISREG(st.st_mode))
+        return 0;
+
+    file = fopen(path, "r");
+    if (file == NULL)
+        return 0;
+
+    fclose(file);
+    return 1;
+}
+
 #ifdef _WIN32
 #include <windows.h>
 #include <conio.h>
-/* Sleep for a given duration in milliseconds (Windows). */
+
 void SleepMillis(int ms) { Sleep(ms); }
-/* Initialize Windows terminal settings for UTF-8 output. */
+
 void InitTerminal(void)
 {
     HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -75,11 +93,11 @@ void InitTerminal(void)
     SetConsoleMode(h, m | 0x0004);
     SetConsoleOutputCP(65001);
 }
-/* Read a single character (blocking) from the console. */
+
 int ReadChar(void) { return _getch(); }
-/* Read a single character (non-blocking) from the console. */
+
 int ReadCharNonBlocking(void) { return _kbhit() ? _getch() : -1; }
-/* Retrieve console dimensions. */
+
 void GetTerminalSize(int *w, int *h)
 {
     CONSOLE_SCREEN_BUFFER_INFO c;
@@ -99,7 +117,7 @@ void GetTerminalSize(int *w, int *h)
 #include <termios.h>
 #include <sys/ioctl.h>
 
-/* Sleep for a given duration in milliseconds (POSIX). */
+
 void SleepMillis(int ms)
 {
     struct timespec ts;
@@ -107,11 +125,9 @@ void SleepMillis(int ms)
     ts.tv_nsec = (ms % 1000) * 1000000L;
     nanosleep(&ts, NULL);
 }
-/* POSIX terminals need no extra initialization here. */
+
 void InitTerminal(void) {}
 
-/* Blocking raw-mode read */
-/* Read a single character (blocking) from stdin. */
 int ReadChar(void)
 {
     struct termios o, n;
@@ -129,8 +145,6 @@ int ReadChar(void)
     return (got == 1) ? (int)c : -1;
 }
 
-/* Non-blocking ~100 ms timeout — used only to drain escape sequences */
-/* Read a single character with a short timeout (~100 ms). */
 int ReadCharNonBlocking(void)
 {
     struct termios o, n;
@@ -148,7 +162,7 @@ int ReadCharNonBlocking(void)
     return (got == 1) ? (int)c : -1;
 }
 
-/* Retrieve terminal dimensions. */
+
 void GetTerminalSize(int *w, int *h)
 {
     struct winsize ws;
@@ -165,31 +179,27 @@ void GetTerminalSize(int *w, int *h)
 }
 #endif
 
-/* ─────────────────────────────────────────────────────────────────────────────
- *  PRIMITIVE HELPERS
- * ───────────────────────────────────────────────────────────────────────────── */
-/* Clear the terminal screen and reset the cursor. */
 void ClearScreen(void)
 {
     printf("\033[2J\033[3J\033[H");
     fflush(stdout);
 }
-/* Flush stdout to force pending output. */
+
 void FlushOutput(void) { fflush(stdout); }
-/* Move the cursor to the given row and column. */
+
 void MoveCursor(int r, int c)
 {
     printf("\033[%d;%dH", r + 1, c + 1);
     FlushOutput();
 }
-/* Print a fixed number of spaces. */
+
 void PadSpaces(int n)
 {
     for (int i = 0; i < n; i++)
         putchar(' ');
 }
 
-/* Visible character count — skips ANSI escapes & UTF-8 continuation bytes */
+
 int VisibleLength(const char *s)
 {
     int len = 0;
@@ -208,11 +218,6 @@ int VisibleLength(const char *s)
     return len;
 }
 
-/*
- *  TruncateVisible - copy s into buf, stopping once visible length would exceed max_vis.
- *  Properly handles ANSI escape sequences (copied verbatim, not counted).
- *  Always null-terminates buf. Returns buf.
- */
 const char *TruncateVisible(const char *s, int max_vis, char *buf, int buf_sz)
 {
     int vlen = 0, i = 0, out = 0;
@@ -220,7 +225,7 @@ const char *TruncateVisible(const char *s, int max_vis, char *buf, int buf_sz)
     {
         if (s[i] == '\033')
         {
-            /* copy entire escape sequence verbatim */
+            
             while (s[i] && s[i] != 'm' && out < buf_sz - 1)
                 buf[out++] = s[i++];
             if (s[i] && out < buf_sz - 1)
@@ -236,7 +241,7 @@ const char *TruncateVisible(const char *s, int max_vis, char *buf, int buf_sz)
             vlen++;
         }
         buf[out++] = s[i++];
-        /* copy UTF-8 continuation bytes */
+        
         while (s[i] && ((unsigned char)s[i] & 0xC0) == 0x80 && out < buf_sz - 1)
             buf[out++] = s[i++];
     }
@@ -244,7 +249,7 @@ const char *TruncateVisible(const char *s, int max_vis, char *buf, int buf_sz)
     return buf;
 }
 
-/* Normalize a word by removing non-alpha characters and lowercasing in place. */
+
 void NormalizeWord(char *word)
 {
     if (word == NULL)
@@ -259,7 +264,7 @@ void NormalizeWord(char *word)
     word[index] = '\0';
 }
 
-/* Check whether a word is empty or all whitespace. */
+
 int IsBlank(const char *word)
 {
     if (word == NULL)

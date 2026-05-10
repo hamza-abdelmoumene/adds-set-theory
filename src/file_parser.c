@@ -5,18 +5,12 @@
 #include "../include/file_parser.h"
 #include "../include/utils.h"
 
-// Duplicate a string — portable replacement for strdup.
+
 static char *StrDup(const char *s)
 {
     return CheckedStrDup(s, "StrDup");
 }
 
-//-----------------------------------------------------------------------------
-//************************* Helper Functions: *********************************
-//-----------------------------------------------------------------------------
-
-// Flush the current word buffer into the words array.
-// Normalizes and skips empty strings, then grows the array if needed.
 static void FlushWord(ParserState *s)
 {
     if (s->word_len == 0)
@@ -41,7 +35,7 @@ static void FlushWord(ParserState *s)
     s->words[s->word_count++] = StrDup(s->word);
 }
 
-// Flush the current words array into a balanced BST and append it as a new sentence.
+
 static void FlushSentence(ParserState *s)
 {
     if (s->word_count == 0)
@@ -66,7 +60,7 @@ static void FlushSentence(ParserState *s)
     s->sentence_buf[0] = '\0';
 }
 
-// Flush the current sentence list into a new paragraph.
+
 static void FlushParagraph(ParserState *s, ParagraphList *result)
 {
     if (s->current_sentences.count == 0)
@@ -79,10 +73,6 @@ static void FlushParagraph(ParserState *s, ParagraphList *result)
     s->paragraph_len = 0;
     s->paragraph_buf[0] = '\0';
 }
-
-// ---------------------------------------------------------------------
-// ****** Main Function in the File (most important in the lab):  ******
-// ---------------------------------------------------------------------
 
 ParagraphList ParseFile(const char *filename)
 {
@@ -115,18 +105,18 @@ ParagraphList ParseFile(const char *filename)
     int c;
     while ((c = fgetc(file)) != EOF)
     {
-        if (c == ' ' || c == '\t') // detect the end of a word
+        if (c == ' ' || c == '\t') 
         {
             FlushWord(&s);
             if (s.sentence_len < (int)sizeof(s.sentence_buf) - 1)
                 s.sentence_buf[s.sentence_len++] = ' ';
         }
-        else if (c == '.') // detect the end of a sentence
+        else if (c == '.') 
         {
             FlushWord(&s);
             FlushSentence(&s);
         }
-        else if (c == '\n') // detect the end of a paragraph
+        else if (c == '\n') 
         {
             FlushWord(&s);
             FlushSentence(&s);
@@ -140,10 +130,10 @@ ParagraphList ParseFile(const char *filename)
                 s.sentence_buf[s.sentence_len++] = (char)c;
         }
 
-        // Always accumulate characters into the paragraph buffer until it's flushed
+        
         if (s.paragraph_len < (int)sizeof(s.paragraph_buf) - 1)
         {
-            // Do not accumulate leading whitespaces for a new paragraph
+            
             if (s.paragraph_len > 0 || !isspace(c))
                 s.paragraph_buf[s.paragraph_len++] = (char)c;
         }

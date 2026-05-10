@@ -1,2 +1,47 @@
-The quick brown fox jumps over the lazy dog. The dog barked loudly.
-The cat sat on the mat. The mat was blue.
+The study of algorithms forms the foundation of computer science bla bla blabla bla blabla bla blabla bla blabla bla blabla bla blabla bla blabla bla blabla bla blabla bla bla.
+Every algorithm must be efficient and correct.
+Data structures allow us to organise information in memory.
+
+Binary search trees provide fast insertion and search operations.
+The tree stores each element as a unique node.
+Traversal algorithms visit every node in a defined order.
+
+Dynamic memory allocation allows programs to grow at runtime.
+Linked lists chain nodes together using pointer connections.
+Memory must always be freed after use to prevent leaks.
+
+The study of algorithms forms the foundation of computer science bla bla blabla bla blabla bla blabla bla blabla bla blabla bla blabla bla blabla bla blabla bla blabla bla bla.
+Every algorithm must be efficient and correct.
+Data structures allow us to organise information in memory.
+
+Binary search trees provide fast insertion and search operations.
+The tree stores each element as a unique node.
+Traversal algorithms visit every node in a defined order.
+
+Dynamic memory allocation allows programs to grow at runtime.
+Linked lists chain nodes together using pointer connections.
+Memory must always be freed after use to prevent leaks.
+
+The study of algorithms forms the foundation of computer science bla bla blabla bla blabla bla blabla bla blabla bla blabla bla blabla bla blabla bla blabla bla blabla bla bla.
+Every algorithm must be efficient and correct.
+Data structures allow us to organise information in memory.
+
+Binary search trees provide fast insertion and search operations.
+The tree stores each element as a unique node.
+Traversal algorithms visit every node in a defined order.
+
+Dynamic memory allocation allows programs to grow at runtime.
+Linked lists chain nodes together using pointer connections.
+Memory must always be freed after use to prevent leaks.
+
+The study of algorithms forms the foundation of computer science bla bla blabla bla blabla bla blabla bla blabla bla blabla bla blabla bla blabla bla blabla bla blabla bla bla.
+Every algorithm must be efficient and correct.
+Data structures allow us to organise information in memory.
+
+Binary search trees provide fast insertion and search operations.
+The tree stores each element as a unique node.
+Traversal algorithms visit every node in a defined order.
+
+Dynamic memory allocation allows programs to grow at runtime.
+Linked lists chain nodes together using pointer connections.
+Memory must always be freed after use to prevent leaks.

@@ -6,41 +6,23 @@
 #include "word_bst.h"
 #include "utils.h"
 
-/**
- * @file sentence_ll.h
- * @brief Linked list implementation for sentences.
- * Incorporates strict Abstract Machine naming conventions.
- */
-
-/**
- * @struct SentenceNode
- * @brief Represents a sentence, storing its unique words in a BST.
- */
 typedef struct SentenceNode
 {
-    int id;                    // Position of the sentence
-    WordNode *val;             // BST of words in this sentence
-    char *original;            // Original raw sentence text from the file
-    struct SentenceNode *addr; // Pointer to the next sentence
+    int id;                    
+    WordNode *val;             
+    char *original;            
+    struct SentenceNode *addr; 
 } SentenceNode;
 
-/**
- * @struct SentenceList
- * @brief A linked list of sentences with a parallel index array for O(1) access.
- *        Mirrors the same design as ParagraphList.
- */
 typedef struct SentenceList
 {
     SentenceNode  *head;
     SentenceNode  *tail;
-    int            count;    // Total number of sentences
-    SentenceNode **index;    // Dynamic array of node pointers (by id) for O(1) access
-    size_t         capacity; // Allocated size of index array
+    int            count;    
+    SentenceNode **index;    
+    size_t         capacity; 
 } SentenceList;
 
-// -----------------------------------------------------------------------------
-// Abstract Machine Operations for Linked List
-// -----------------------------------------------------------------------------
 #ifndef ABSTRACT_MACHINE_LIST_MACROS
 #define ABSTRACT_MACHINE_LIST_MACROS
 static inline void *AllocateImpl(size_t size)
@@ -54,27 +36,27 @@ static inline void *AllocateImpl(size_t size)
 #define Ass_adr(p, q)  ((p)->addr = (q))
 #define Value(p)       ((p)->val)
 #define Next(p)        ((p)->addr)
-#endif // ABSTRACT_MACHINE_LIST_MACROS
+#endif 
 
-// Initialize an empty SentenceList.
+
 SentenceList CreateSentenceList(void);
 
-// Append a new sentence (represented by its word BST) to the list.
+
 void AddSentence(SentenceList *list, WordNode *bst_root, const char *original);
 
-// Retrieve a sentence node by its ID (linear scan fallback).
+
 SentenceNode *GetSentence(SentenceList list, int id);
 
-// Build the index array for O(1) access by sentence id.
+
 void BuildSentenceIndex(SentenceList *list);
 
-// Retrieve a sentence node in O(1) using the index array.
+
 SentenceNode *GetSentenceByIndex(SentenceList *list, int i);
 
-// Print all sentences in the list and their distinct words.
+
 void PrintSentences(SentenceList list);
 
-// Free all sentences, their associated BSTs, and the index array from memory.
+
 void FreeSentenceList(SentenceList *list);
 
-#endif // SENTENCE_LL_H
+#endif 

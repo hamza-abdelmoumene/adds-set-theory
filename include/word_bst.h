@@ -7,28 +7,14 @@
 #include <stdbool.h>
 #include "utils.h"
 
-/**
- * @file word_bst.h
- * @brief Binary Search Tree implementation for storing words.
- * Incorporates strict Abstract Machine naming conventions.
- */
-
 #define MAX_WORD 256
 
-/**
- * @struct WordNode
- * @brief Node for the binary search tree containing a single word.
- */
 typedef struct WordNode
 {
     char val[MAX_WORD];
     struct WordNode *left;
     struct WordNode *right;
 } WordNode;
-
-// -----------------------------------------------------------------------------
-// ************** Abstract Machine Operations for Binary Tree ******************
-// -----------------------------------------------------------------------------
 
 #define Ass_LC(p, q) ((p)->left = (q))
 #define Ass_RC(p, q) ((p)->right = (q))
@@ -50,24 +36,24 @@ static inline WordNode *AllocateNodeImpl(void)
 
 #define AllocateNode() (AllocateNodeImpl())
 
-// Search for a word in the BST. Returns the node (p) and its parent (q).
+
 void Search(const char *word, WordNode *r, WordNode **p, WordNode **q);
 
-// Insert a word into the BST. Ignores duplicates.
+
 bool Insert(const char *word, WordNode **r);
 
-// Print the BS int            count;T in-order (alphabetically).
+
 void Inorder(WordNode *r);
 
-// Free all nodes in the BST and set root to NULL.
+
 void FreeTree(WordNode **r);
 
-// Copy all words from src tree into dest tree.
+
 void CopyTree(WordNode *src, WordNode **dest);
 
-// Balanced BST helpers (array -> sort -> median-first insertion)
+
 void CollectWords(WordNode *root, char ***array, size_t *size, size_t *capacity);
 void SortWords(char **array, size_t size);
 void MedianInsert(char **array, size_t left, size_t right, WordNode **root);
 
-#endif // WORD_BST_H
+#endif 

@@ -1,8 +1,4 @@
-/* ═════════════════════════════════════════════════════════════════════════════
- *  ADDS – Set Theory Text Analyser  |  user_interface.c
- *  Platform : POSIX (Linux / macOS) + Windows
- *  Encoding : UTF-8                 Date: 2025 / 2026
- * ═════════════════════════════════════════════════════════════════════════════ */
+
 
 #define _POSIX_C_SOURCE 199309L
 
@@ -23,24 +19,11 @@
 #include "../include/paragraph_ll.h"
 #include "../include/file_parser.h"
 
-/* ─────────────────────────────────────────────────────────────────────────────
- *  BOX LAYOUT
- *
- *  Total width  = 100 visible columns (centred in the terminal).
- *  Left  panel  = 49 visible cols  (║ ... ║)
- *  Right panel  = 48 visible cols  (║ ... ║)
- *  Borders      =  3 cols
- *  49 + 48 + 3  = 100 ✓
- *
- *  DrawRow() HARD-CLAMPS the right content to RIGHT_W visible chars.
- *  Nothing can ever bleed past the closing ║.
- * ───────────────────────────────────────────────────────────────────────────── */
 #define BOX_W 100
 #define LEFT_W 49
 #define RIGHT_W 48
 #define RSLOTS 24
 
-/* Compute the left padding needed to center the UI box. */
 static int BoxColumn(void)
 {
     int w, h;
@@ -49,17 +32,15 @@ static int BoxColumn(void)
     return (p < 0) ? 0 : p;
 }
 
-/* Draw a full-width border line with the box centered. */
 static void DrawBorder(const char *s)
 {
     PadSpaces(BoxColumn());
     printf("%s\033[K\n", s);
 }
 
-/* Render a two-column row with optional left color and hard-clamped right text. */
 static void DrawRow(const char *lc, const char *l, const char *r)
 {
-    /* hard-clamp right content — this is the single fix for bound crossing */
+
     char rbuf[512];
     const char *rc = TruncateVisible(r, RIGHT_W, rbuf, (int)sizeof(rbuf));
 
@@ -71,23 +52,25 @@ static void DrawRow(const char *lc, const char *l, const char *r)
         rpad = 0;
 
     PadSpaces(BoxColumn());
-    printf(C7 "║" RST); /* ║ */
+    printf(C7 "║" RST);
     if (lc)
         printf("%s", lc);
     printf("%s", l);
     if (lc)
         printf(RST);
     PadSpaces(lpad);
-    printf(C7 "║" RST); /* ║ */
+    printf(C7 "║" RST);
     printf("%s", rc);
     PadSpaces(rpad);
-    printf(C7 "║" RST "\033[K\n"); /* ║ */
+    printf(C7 "║" RST "\033[K\n");
 }
 
-/* Draw a full-width row for result/dialog screens that should not show art. */
 static void DrawFullRow(const char *content)
 {
-    enum { FULL_W = BOX_W - 2 };
+    enum
+    {
+        FULL_W = BOX_W - 2
+    };
     char buf[1024];
     const char *line = TruncateVisible(content ? content : "", FULL_W, buf, (int)sizeof(buf));
     int pad = FULL_W - VisibleLength(line);
@@ -100,7 +83,6 @@ static void DrawFullRow(const char *content)
     printf(C7 "║" RST "\033[K\n");
 }
 
-/* Draw a simple full-width blue rectangle. */
 static void DrawFullBox(const char *slots[RSLOTS])
 {
     PadSpaces(BoxColumn());
@@ -119,10 +101,6 @@ static void DrawFullBox(const char *slots[RSLOTS])
     printf("╝" RST "\033[K\n");
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
- *  STATUS BAR  (separator + gradient footer)
- * ───────────────────────────────────────────────────────────────────────────── */
-/* Animate the horizontal separator line at the bottom. */
 static void DrawSeparator(void)
 {
     int tw, th;
@@ -143,7 +121,7 @@ static void DrawSeparator(void)
                     printf(C8);
                 else
                     printf(C4);
-                printf("─"); /* ─ */
+                printf("─");
             }
             else
                 printf(" ");
@@ -154,7 +132,6 @@ static void DrawSeparator(void)
     }
 }
 
-/* Render the footer with a left/right gradient label. */
 static void DrawFooter(void)
 {
     int tw, th;
@@ -167,8 +144,7 @@ static void DrawFooter(void)
         start = 0;
 
     static const char *fg[] = {
-        C4, C5, C6, C7, C8, C9, C10, C11, C12
-    };
+        C4, C5, C6, C7, C8, C9, C10, C11, C12};
     int fgN = (int)(sizeof(fg) / sizeof(fg[0])) - 1;
 
     MoveCursor(th - 2, 0);
@@ -182,41 +158,54 @@ static void DrawFooter(void)
     FlushOutput();
 }
 
-/* Draw the separator and footer as a single status bar unit. */
 static void DrawStatusBar(void)
 {
     DrawSeparator();
     DrawFooter();
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
- *  BREADCRUMB
- * ───────────────────────────────────────────────────────────────────────────── */
-/* Print the breadcrumb label at the top of the UI. */
+static void DrawBreadcrumb(const char *crumb);
+
+static void ShowShortcutsPopup(void)
+{
+    const char *rs[RSLOTS];
+    for (int i = 0; i < RSLOTS; i++)
+        rs[i] = "";
+
+    rs[2] = C10 BLD "  ◆  SHORTCUTS" RST;
+    rs[3] = C5 "  ────────────────────────────────────────────────────────────────────────────────" RST;
+    rs[5] = C12 "  ↑ / ↓" RST C7 "        move through choices or pages" RST;
+    rs[7] = C12 "  Enter" RST C7 "        select the highlighted item" RST;
+    rs[9] = C12 "  1-9" RST C7 "          jump directly to a numbered item" RST;
+    rs[11] = C12 "  ESC" RST C7 "          go back or cancel the current input" RST;
+    rs[13] = C12 "  Backspace" RST C7 "    delete while typing a file path" RST;
+    rs[15] = C12 "  ?" RST C7 "            open this help panel" RST;
+    rs[20] = DIM GR2 "  Press any key to return" RST;
+
+    ClearScreen();
+    DrawBreadcrumb("ADDS  ›  Shortcuts");
+    DrawFullBox(rs);
+    DrawStatusBar();
+    ReadChar();
+}
+
 static void DrawBreadcrumb(const char *crumb)
 {
     MoveCursor(0, 0);
     PadSpaces(BoxColumn());
-    /* ›  U+203A = › */
+
     printf(C4 " ›  " C7 "%s" RST "\033[K\n", crumb);
     FlushOutput();
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
- *  KEYBOARD READER
- *  Returns: 'U'=up  'D'=down  '\r'=enter  '1'..'9'=direct  27=ESC  0=ignored
- *
- *  ESC handling: read first byte. If a second byte arrives within ~100ms and
- *  is '[', it's an escape sequence. If no second byte - bare ESC -> return 27.
- *  This is reliable because ReadCharNonBlocking() uses VTIME=1 (100ms timeout).
- * ───────────────────────────────────────────────────────────────────────────── */
-/* Read a single key and translate navigation keys to logical codes. */
 static int ReadKey(void)
 {
     int c = ReadChar();
 
     if (c >= '1' && c <= '9')
         return c;
+    if (c == '?')
+        return '?';
     if (c == '\r' || c == '\n')
         return '\r';
 
@@ -224,7 +213,7 @@ static int ReadKey(void)
     {
         int c2 = ReadCharNonBlocking();
         if (c2 == -1)
-            return 27; /* bare ESC */
+            return 27;
         if (c2 == '[')
         {
             int c3 = ReadCharNonBlocking();
@@ -236,21 +225,18 @@ static int ReadKey(void)
             {
                 ReadCharNonBlocking();
                 return 'U';
-            } /* PgUp */
+            }
             if (c3 == '6')
             {
                 ReadCharNonBlocking();
                 return 'D';
-            } /* PgDn */
+            }
         }
-        return 27; /* unrecognised sequence → treat as ESC */
+        return 27;
     }
     return 0;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
- *  LEFT-PANEL ASCII ART  (49 visible cols each — do not modify)
- * ───────────────────────────────────────────────────────────────────────────── */
 static const char *ESI_ART[] = {
     "             ███████╗  ███████╗  ██╗             ",
     "             ██╔════╝  ██╔════╝  ██║             ",
@@ -284,29 +270,9 @@ static const char *TP_COL[] = {C9 BLD, C10 BLD, C11 BLD, C12 BLD, C12 BLD, WHT B
 static const char *BADGE[] = {C6, C7, C8, C9, C10, C11, C12, WHT};
 #define BADGE_N 8
 
-/* ─────────────────────────────────────────────────────────────────────────────
- *  BOX SKELETON
- *
- *  Fixed 24 content rows (indices 0..23), so the box never overflows the screen.
- *
- *  Row  0      blank
- *  rows 1..6   ESI art     right slots 1..6
- *  Row  7      blank
- *  rows 8..13  ADDS art    right slots 8..13
- *  Row 14      blank
- *  rows 15..20 TP art      right slots 15..20
- *  Row 21      blank
- *  Row 22      nav hint    right slot 22
- *  Row 23      blank
- *
- *  Total content rows = 24.  Box height = 24 + 2 (borders) = 26 lines.
- *  Status bar = 2 lines below. Breadcrumb = 1 line above.
- *  Total screen usage = 29 lines — fits comfortably in any 35+ Row terminal.
- * ───────────────────────────────────────────────────────────────────────────── */
-/* Render the full UI box with left art and right content slots. */
 static void DrawBox(const char *rslots[RSLOTS])
 {
-    /* ── top Border ── */
+
     DrawBorder(C7
                "╔"
                "══════════"
@@ -322,7 +288,6 @@ static void DrawBox(const char *rslots[RSLOTS])
                "════════"
                "╗" RST);
 
-    /* ── content ── */
     DrawRow(NULL, "", rslots[0]);
     for (int i = 0; i < 6; i++)
         DrawRow(ESI_COL[i], ESI_ART[i], rslots[1 + i]);
@@ -336,7 +301,6 @@ static void DrawBox(const char *rslots[RSLOTS])
     DrawRow(NULL, "", rslots[22]);
     DrawRow(NULL, "", rslots[23]);
 
-    /* ── bottom Border ── */
     DrawBorder(C7
                "╚"
                "══════════"
@@ -353,16 +317,6 @@ static void DrawBox(const char *rslots[RSLOTS])
                "╝" RST);
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
- *  OPTION FORMATTER
- *
- *  selected:  " ▶  [ N ]  LABEL"  (bright, bold)
- *  normal:    "     [ N ]  label"  (dim badge, muted label)
- *
- *  The string never needs explicit truncation because TruncateVisible() inside DrawRow()
- *  handles it automatically.
- * ───────────────────────────────────────────────────────────────────────────── */
-/* Build the display string for one menu option. */
 static void FormatOption(char *buf, int bufsz, int idx, const char *label, int selected)
 {
     const char *bc = BADGE[idx < BADGE_N ? idx : BADGE_N - 1];
@@ -376,20 +330,6 @@ static void FormatOption(char *buf, int bufsz, int idx, const char *label, int s
                  bc, idx + 1, label);
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
- *  GENERIC MENU ENGINE
- *
- *  Options 0..n-1 placed in ADDS rows (rslots 8..13):
- *    ≤3 options: spread with blank spacers for breathing room
- *    4-6 options: one per row, packed
- *
- *  Options 6..8 placed in TP rows (rslots 15..17).
- *  Title + separator: ESI rows 2..3.
- *  Nav hint: rslot 22.
- *
- *  Returns 0-based index, or -1 on ESC.
- * ───────────────────────────────────────────────────────────────────────────── */
-/* Drive the menu input loop and return the selected index. */
 static int GenericMenu(const char *title,
                        const char **opts, int n,
                        const char *crumb)
@@ -403,7 +343,8 @@ static int GenericMenu(const char *title,
              DIM GR2
              "  ↑↓  PgUp PgDn  navigate"
              "   Enter / 1-%d  select"
-             "   ESC  back" RST,
+             "   ESC  back"
+             "   ?  help" RST,
              n < 9 ? n : 9);
 
     char opt_bufs[9][256];
@@ -417,7 +358,6 @@ static int GenericMenu(const char *title,
         for (int i = 0; i < RSLOTS; i++)
             rs[i] = "";
 
-        /* title + separator in ESI rows */
         char rtitle[256];
         snprintf(rtitle, sizeof(rtitle), C10 BLD "  ◆  %s" RST, title);
         rs[2] = rtitle;
@@ -428,16 +368,9 @@ static int GenericMenu(const char *title,
             "──────"
             "──────" RST;
 
-        /*
-         *  Spread options into ADDS rows (rslots 8..13):
-         *  - 1..3 options: each gets a row, blank rows in between for spacing
-         *  - 4..6 options: packed one-per-row
-         */
         if (n <= 3)
         {
-            /*  slot 8 = opt 0,  slot 9 = blank,
-                slot 10 = opt 1,  slot 11 = blank,
-                slot 12 = opt 2,  slot 13 = blank  */
+
             for (int i = 0; i < 3; i++)
             {
                 rs[8 + i * 2] = (i < n) ? opt_bufs[i] : "";
@@ -450,9 +383,8 @@ static int GenericMenu(const char *title,
                 rs[8 + i] = (i < n) ? opt_bufs[i] : "";
         }
 
-        /* options 6..8 in TP rows */
         for (int i = 0; i < 3; i++)
-            rs[15 + i] = (6 + i < n) ? opt_bufs[6 + i] : "";
+            rs[14 + i] = (6 + i < n) ? opt_bufs[6 + i] : "";
 
         rs[22] = nav;
 
@@ -478,6 +410,10 @@ static int GenericMenu(const char *title,
         {
             return -1;
         }
+        else if (k == '?')
+        {
+            ShowShortcutsPopup();
+        }
         else if (k >= '1' && k <= '9')
         {
             int p = k - '1';
@@ -487,10 +423,6 @@ static int GenericMenu(const char *title,
     }
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
- *  INTRO ANIMATION  (unchanged logic from your original)
- * ───────────────────────────────────────────────────────────────────────────── */
-/* Type a centered line with a per-character delay. */
 static void TypeAt(int r, const char *color, const char *text, int delay)
 {
     int tw, th;
@@ -525,7 +457,6 @@ static void TypeAt(int r, const char *color, const char *text, int delay)
     FlushOutput();
 }
 
-/* Print a centered line with a single color. */
 static void CenterPrint(int r, const char *color, const char *text)
 {
     int tw, th;
@@ -554,14 +485,13 @@ static const RGB L_BLACK = {0, 0, 0};
 static const RGB L_BLUE = {30, 105, 180};
 static int g_pad = 0;
 
-/* Reset the logo canvas to a white background. */
 static void ClearCanvas(void)
 {
     for (int y = 0; y < CH; y++)
         for (int x = 0; x < CW; x++)
             canvas[y][x] = L_WHITE;
 }
-/* Fill a rectangle on the logo canvas. */
+
 static void FillRect(int x0, int y0, int w, int h, RGB c)
 {
     for (int y = y0; y < y0 + h && y < CH; y++)
@@ -572,7 +502,7 @@ static void FillRect(int x0, int y0, int w, int h, RGB c)
 #define LS 5
 #define LT 9
 #define LB 35
-/* Draw the letter E on the logo canvas. */
+
 static void DrawE(void)
 {
     int x = 10, w = 20, mid = (LT + LB) / 2 - LS / 2;
@@ -582,7 +512,7 @@ static void DrawE(void)
     FillRect(x, mid, w, LS, L_BLACK);
     FillRect(x, LB - LS, w, LS, L_BLACK);
 }
-/* Draw the letter S on the logo canvas. */
+
 static void DrawS(void)
 {
     int x = 34, w = 20, mid = (LT + LB) / 2 - LS / 2;
@@ -592,19 +522,18 @@ static void DrawS(void)
     FillRect(x + w - LS, mid, LS, LB - mid, L_BLACK);
     FillRect(x, LB - LS, w, LS, L_BLACK);
 }
-/* Draw the letter I on the logo canvas. */
+
 static void DrawI(void)
 {
     FillRect(61, LT, 6, LB - LT, L_BLACK);
     FillRect(58, LT, 12, LS, L_BLACK);
     FillRect(58, LB - LS, 12, LS, L_BLACK);
 }
-/* Draw the accent dot on the logo canvas. */
+
 static void DrawDot(void) { FillRect(60, 3, 8, 5, L_BLUE); }
-/* Compare two RGB values. */
+
 static int RgbEquals(RGB a, RGB b) { return a.r == b.r && a.g == b.g && a.b == b.b; }
 
-/* Render the logo canvas using ANSI color blocks. */
 static void RenderLogo(void)
 {
     for (int y = 0; y < CH; y += 2)
@@ -625,7 +554,6 @@ static void RenderLogo(void)
     }
 }
 
-/* Pause within the logo animation for the given duration. */
 static void LogoSleep(int ms)
 {
 #ifdef _WIN32
@@ -638,7 +566,6 @@ static void LogoSleep(int ms)
 #endif
 }
 
-/* Type a centered line with a light typing effect. */
 static void TypewriteCentered(const char *t, int tw)
 {
     int p = (tw - (int)strlen(t)) / 2;
@@ -654,7 +581,7 @@ static void TypewriteCentered(const char *t, int tw)
     }
     printf("\033[0m\033[K\n");
 }
-/* Type two labels spaced left and right with a typing effect. */
+
 static void TypewriteLeftRight(const char *l, const char *r, int tw)
 {
     int ll = (int)strlen(l), rl = (int)strlen(r), sp = tw - 2 * g_pad - ll - rl;
@@ -682,7 +609,7 @@ static void TypewriteLeftRight(const char *l, const char *r, int tw)
     }
     printf("\033[0m\033[K\n");
 }
-/* Print a dashed separator line centered on the logo layout. */
+
 static void PrintSeparatorLine(int tw)
 {
     PadSpaces(g_pad);
@@ -693,7 +620,6 @@ static void PrintSeparatorLine(int tw)
     fflush(stdout);
 }
 
-/* Show the ESI logo screen with typewriter metadata. */
 static void ShowEsiLogo(void)
 {
     int tw, th;
@@ -717,9 +643,9 @@ static void ShowEsiLogo(void)
     TypewriteCentered("Encadreur :  Dr. Kermi", tw);
     printf("\n");
     static const char school[] = "  É"
-                                "cole Supé"
-                                "rieure d'Informatique  —"
-                                "  Alger";
+                                 "cole Supé"
+                                 "rieure d'Informatique  —"
+                                 "  Alger";
     static const char year[] = "2025 / 2026  ";
     TypewriteLeftRight(school, year, tw);
     printf("\n");
@@ -735,25 +661,25 @@ static void ShowEsiLogo(void)
     ReadChar();
 }
 
-/* Prompt the user to switch to fullscreen for best layout. */
 static void ShowFullscreenNotice(void)
 {
     int tw, th;
     GetTerminalSize(&tw, &th);
     ClearScreen();
     int m = th / 2 - 4;
-    CenterPrint(m,     C8 BLD, "┌────────────────────────────────────────────────────┐");
+    CenterPrint(m, C8 BLD, "┌────────────────────────────────────────────────────┐");
     CenterPrint(m + 1, C8 BLD, "│                                                    │");
-    
+
     int box_width = 54;
     int col = (tw - box_width) / 2;
-    if (col < 0) col = 0;
+    if (col < 0)
+        col = 0;
     MoveCursor(m + 2, col);
     printf("%s│     ⚠  PLEASE PUT YOUR TERMINAL IN FULLSCREEN  ⚠\033[%dG│" RST "\033[K", C7 BLD, col + box_width);
     FlushOutput();
 
     CenterPrint(m + 3, C8 BLD, "│                                                    │");
-    CenterPrint(m + 4, C9,     "│           Minimum recommended: 120 x 35            │");
+    CenterPrint(m + 4, C9, "│           Minimum recommended: 120 x 35            │");
     CenterPrint(m + 5, C8 BLD, "│                                                    │");
     CenterPrint(m + 6, C8 BLD, "└────────────────────────────────────────────────────┘");
     CenterPrint(m + 9, DIM WHT, "Press any key to continue...");
@@ -762,7 +688,6 @@ static void ShowFullscreenNotice(void)
     ClearScreen();
 }
 
-/* Show the TP1 title animation. */
 static void ShowTp1(void)
 {
     int tw, th;
@@ -783,7 +708,7 @@ static void ShowTp1(void)
     FlushOutput();
     SleepMillis(1000);
 }
-/* Show the accomplishment banner animation. */
+
 static void ShowAccomplished(void)
 {
     int tw, th;
@@ -799,7 +724,7 @@ static void ShowAccomplished(void)
     FlushOutput();
     SleepMillis(600);
 }
-/* Show the authors' names with a color sweep. */
+
 static void ShowNames(void)
 {
     int tw, th;
@@ -824,7 +749,7 @@ static void ShowNames(void)
     FlushOutput();
     SleepMillis(500);
 }
-/* Animate the divider line after the names. */
+
 static void ShowSeparatorAnimation(void)
 {
     int tw, th;
@@ -857,7 +782,6 @@ static void ShowSeparatorAnimation(void)
     }
 }
 
-/* Run the full intro animation sequence. */
 void RunAnimation(void)
 {
     InitTerminal();
@@ -887,10 +811,6 @@ void RunAnimation(void)
     FlushOutput();
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
- *  NOTIFICATION HELPERS
- * ───────────────────────────────────────────────────────────────────────────── */
-/* Show a short success notification near the bottom. */
 static void NotifyOk(const char *msg)
 {
     int tw, th;
@@ -904,7 +824,7 @@ static void NotifyOk(const char *msg)
     FlushOutput();
     SleepMillis(900);
 }
-/* Show a short error notification near the bottom. */
+
 static void NotifyError(const char *msg)
 {
     int tw, th;
@@ -919,10 +839,6 @@ static void NotifyError(const char *msg)
     SleepMillis(1200);
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
- *  PUBLIC MENU FUNCTIONS
- * ───────────────────────────────────────────────────────────────────────────── */
-/* Display the main menu and return the selected index. */
 int MenuMain(void)
 {
     static const char *opts[] = {
@@ -931,23 +847,21 @@ int MenuMain(void)
         "Set Operations",
         "Exit",
     };
-    /* U+203A = › (›) */
+
     return GenericMenu("MAIN MENU", opts, 4, "ADDS  ›  Set Theory");
 }
 
-/* Display the level selection menu. */
 int MenuLevel(void)
 {
     static const char *opts[] = {
-        "Word        —  BST word operations",
-        "Sentence    —  sentence linked-list operations",
-        "Paragraph   —  paragraph linked-list operations",
+        "Word operations",
+        "Sentence operations",
+        "Paragraph operations",
     };
     return GenericMenu("SELECT LEVEL", opts, 3,
                        "Main Menu  ›  Set Operations  ›  Level");
 }
 
-/* Display the operation selection menu. */
 int MenuOperation(void)
 {
     static const char *names[] = {
@@ -970,7 +884,7 @@ int MenuOperation(void)
     char def_lines[3][256];
     char nav[160];
     snprintf(nav, sizeof(nav),
-             DIM GR2 "  ↑↓ navigate   Enter/1-3 select   ESC back" RST);
+             DIM GR2 "  ↑↓ navigate   Enter/1-3 select   ESC back   ? help" RST);
 
     for (;;)
     {
@@ -985,13 +899,11 @@ int MenuOperation(void)
         {
             if (i == sel)
                 snprintf(opt_lines[i], sizeof(opt_lines[i]),
-                         C9 BLD " ▶ " C12 BLD "[%d]" RST " " WHT BLD "%-12s" RST
-                         C4 " " RST C10 "%s" RST,
+                         C9 BLD " ▶ " C12 BLD "[%d]" RST " " WHT BLD "%-12s" RST C4 " " RST C10 "%s" RST,
                          i + 1, names[i], plain[i]);
             else
                 snprintf(opt_lines[i], sizeof(opt_lines[i]),
-                         "   %s[%d]" RST " " C7 "%-12s" RST
-                         C4 " " RST DIM GR2 "%s" RST,
+                         "   %s[%d]" RST " " C7 "%-12s" RST C4 " " RST DIM GR2 "%s" RST,
                          BADGE[i], i + 1, names[i], plain[i]);
 
             snprintf(def_lines[i], sizeof(def_lines[i]),
@@ -1020,12 +932,13 @@ int MenuOperation(void)
             return sel;
         else if (k == 27)
             return -1;
+        else if (k == '?')
+            ShowShortcutsPopup();
         else if (k >= '1' && k <= '3')
             return k - '1';
     }
 }
 
-/* Display a file picker menu for the loaded files list. */
 int MenuPickFile(const char **files, int n, const char *crumb)
 {
     if (n == 0)
@@ -1036,7 +949,6 @@ int MenuPickFile(const char **files, int n, const char *crumb)
     return GenericMenu("SELECT FILE", files, n, crumb);
 }
 
-/* Display a paragraph picker menu for a file. */
 int MenuPickParagraph(const char **labels, int n, const char *crumb)
 {
     if (n == 0)
@@ -1047,7 +959,6 @@ int MenuPickParagraph(const char **labels, int n, const char *crumb)
     return GenericMenu("SELECT PARAGRAPH", labels, n, crumb);
 }
 
-/* Display a sentence picker menu for a paragraph. */
 int MenuPickSentence(const char **labels, int n, const char *crumb)
 {
     if (n == 0)
@@ -1058,15 +969,12 @@ int MenuPickSentence(const char **labels, int n, const char *crumb)
     return GenericMenu("SELECT SENTENCE", labels, n, crumb);
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
- *  DIALOG SCREENS
- * ───────────────────────────────────────────────────────────────────────────── */
-/* Prompt the user to enter a file path. */
-int ScreenLoadFile(char *buf, int buf_size)
+static void DrawLoadFileScreen(const char *typed)
 {
     const char *rs[RSLOTS];
     for (int i = 0; i < RSLOTS; i++)
         rs[i] = "";
+
     rs[2] = C10 BLD "  ◆  LOAD FILE" RST;
     rs[3] = C5 "  ──────────────────────────────" RST;
     rs[5] = C7 "  Enter the path to the file:" RST;
@@ -1074,7 +982,7 @@ int ScreenLoadFile(char *buf, int buf_size)
     rs[10] = C5 "    tests/test1.txt" RST;
     rs[11] = C5 "    tests/test2.txt" RST;
     rs[12] = C5 "    /absolute/path/to/file.txt" RST;
-    rs[20] = DIM GR2 "  ESC  cancel   Backspace  delete" RST;
+    rs[20] = DIM GR2 "  Enter  load   ESC  cancel   Backspace  delete   ?  help" RST;
 
     ClearScreen();
     DrawBreadcrumb("Main Menu  ›  Load File");
@@ -1086,11 +994,18 @@ int ScreenLoadFile(char *buf, int buf_size)
     MoveCursor(th - 4, 0);
     PadSpaces(BoxColumn());
     printf(C9 "  ›  " RST);
+    if (typed)
+        printf("%s", typed);
     printf(SCUR);
     FlushOutput();
+}
 
+int ScreenLoadFile(char *buf, int buf_size)
+{
     int pos = 0;
     buf[0] = '\0';
+    DrawLoadFileScreen(buf);
+
     for (;;)
     {
         int c = ReadChar();
@@ -1103,22 +1018,38 @@ int ScreenLoadFile(char *buf, int buf_size)
         }
         if (c == '\r' || c == '\n')
         {
-            printf("\n");
-            break;
+            if (pos > 0)
+            {
+                printf("\n");
+                break;
+            }
+            printf("\a");
+            FlushOutput();
+            continue;
         }
         if (c == 127 || c == '\b')
         {
             if (pos > 0)
             {
                 pos--;
+                buf[pos] = '\0';
                 printf("\b \b");
                 FlushOutput();
             }
             continue;
         }
+        if (c == '?')
+        {
+            printf(HCUR);
+            FlushOutput();
+            ShowShortcutsPopup();
+            DrawLoadFileScreen(buf);
+            continue;
+        }
         if (pos < buf_size - 1 && c >= 32 && c < 127)
         {
             buf[pos++] = (char)c;
+            buf[pos] = '\0';
             putchar(c);
             FlushOutput();
         }
@@ -1129,41 +1060,199 @@ int ScreenLoadFile(char *buf, int buf_size)
     return pos > 0;
 }
 
-/* Show a list of loaded files with paragraph counts. */
-void ScreenListFiles(const char **files, const int *para_cnt, int n)
+static void BuildParagraphPreview(const char *text, char *out, int outsz, int limit)
 {
-    static char fbufs[8][160];
-    const char *rs[RSLOTS];
-    for (int i = 0; i < RSLOTS; i++)
-        rs[i] = "";
+    (void)limit; /* now word-count based, limit param kept for signature compat */
 
-    rs[2] = C10 BLD "  ◆  LOADED FILES" RST;
-    rs[3] = C5 "  ──────────────────────────────" RST;
+    if (outsz <= 0)
+        return;
 
-    if (n == 0)
+    out[0] = '\0';
+
+    if (text == NULL || text[0] == '\0')
     {
-        rs[5] = C4 "  No files loaded yet." RST;
+        snprintf(out, (size_t)outsz, "(empty paragraph)");
+        return;
     }
-    else
+
+    int pos = 0;
+    int words = 0;
+    const int max_words = 10;
+    int in_word = 0;
+
+    for (int i = 0; text[i] && pos < outsz - 1; i++)
     {
-        for (int i = 0; i < n && i < 8; i++)
+        unsigned char ch = (unsigned char)text[i];
+
+        if (isspace(ch))
         {
-            snprintf(fbufs[i], sizeof(fbufs[i]),
-                     C9 "  [%d]" RST "  " C7 "%s" RST C4 "  (%d para)" RST,
-                     i, files[i], para_cnt[i]);
-            if (i < 6)
-                rs[8 + i] = fbufs[i];
-            else
-                rs[15 + (i - 6)] = fbufs[i];
+            if (in_word)
+            {
+                in_word = 0;
+                if (words >= max_words)
+                    break;
+                if (pos < outsz - 1)
+                    out[pos++] = ' ';
+            }
+            continue;
         }
-    }
-    rs[22] = DIM GR2 "  Press any key to return" RST;
 
-    ClearScreen();
-    DrawBreadcrumb("Main Menu  ›  List Loaded Files");
-    DrawBox(rs);
-    DrawStatusBar();
-    ReadChar();
+        if (!in_word)
+        {
+            in_word = 1;
+            words++;
+        }
+
+        if (words > max_words)
+            break;
+
+        out[pos++] = (char)ch;
+    }
+
+    /* trim trailing space */
+    while (pos > 0 && out[pos - 1] == ' ')
+        pos--;
+
+    out[pos] = '\0';
+
+    /* only add ellipsis if there is more text remaining */
+    if (words >= max_words && pos < outsz - 4)
+    {
+        /* check there's actually more non-space content after what we captured */
+        int i = 0;
+        while (text[i] && isspace((unsigned char)text[i])) i++;
+        int w = 0;
+        while (text[i])
+        {
+            if (!isspace((unsigned char)text[i])) {
+                if (i == 0 || isspace((unsigned char)text[i-1])) w++;
+            }
+            i++;
+        }
+        if (w > max_words)
+            strncat(out, "...", (size_t)outsz - strlen(out) - 1);
+    }
+}
+
+static void ScreenShowFilePreview(FileNode *fn)
+{
+    int page = 0;
+    const int per_page = 12;
+    static char title[220], meta[180], page_line[120], rows[12][640], fname[120];
+
+    if (fn == NULL)
+        return;
+
+    for (;;)
+    {
+        const char *rs[RSLOTS];
+        int total = fn->val.count;
+        int pages = (total + per_page - 1) / per_page;
+        int start = page * per_page;
+        ParagraphNode *p;
+
+        if (pages < 1)
+            pages = 1;
+        if (page >= pages)
+            page = pages - 1;
+
+        for (int i = 0; i < RSLOTS; i++)
+            rs[i] = "";
+
+        TruncateVisible(fn->filename, 58, fname, (int)sizeof(fname));
+        snprintf(title, sizeof(title), C10 BLD "  ◆  FILE CONTENT  │  %s" RST, fname);
+        snprintf(meta, sizeof(meta), C7 "  Paragraphs" RST C4 "  ──  " RST C12 "%d" RST, total);
+        snprintf(page_line, sizeof(page_line), DIM GR2 "  Page %d/%d   ↑↓ page   ESC back   ? help" RST, page + 1, pages);
+
+        rs[1] = title;
+        rs[2] = C5 "  ────────────────────────────────────────────────────────────────────────────────" RST;
+        rs[4] = meta;
+
+        if (total == 0)
+        {
+            rs[8] = C4 "  No paragraphs were parsed from this file." RST;
+        }
+        else
+        {
+            p = GetParagraphByIndex(&fn->val, start);
+            for (int i = 0; i < per_page && p != NULL; i++)
+            {
+                char preview[420];
+                BuildParagraphPreview(p->original, preview, (int)sizeof(preview), 68);
+                snprintf(rows[i], sizeof(rows[i]),
+                         C9 "  Paragraph %-2d" RST C4 " │ " RST C12 "%s" RST,
+                         p->id + 1, preview);
+                rs[7 + i] = rows[i];
+                p = Next(p);
+            }
+        }
+
+        rs[21] = C4 "  ────────────────────────────────────────────────────────────────────────────────" RST;
+        rs[22] = page_line;
+
+        ClearScreen();
+        DrawBreadcrumb("Main Menu  ›  Loaded Files  ›  Preview");
+        DrawFullBox(rs);
+        DrawStatusBar();
+
+        int k = ReadKey();
+        if (k == 'U' && page > 0)
+            page--;
+        else if (k == 'D' && page + 1 < pages)
+            page++;
+        else if (k == '?')
+            ShowShortcutsPopup();
+        else if (k == 27 || k == '\r')
+            return;
+    }
+}
+
+static void ScreenExploreLoadedFiles(FileList *list)
+{
+    static char labels[8][180];
+    char fname[120];
+    const char *ptrs[8];
+
+    if (list == NULL || list->count == 0)
+    {
+        const char *rs[RSLOTS];
+        for (int i = 0; i < RSLOTS; i++)
+            rs[i] = "";
+
+        rs[2] = C10 BLD "  ◆  LOADED FILES" RST;
+        rs[3] = C5 "  ──────────────────────────────" RST;
+        rs[8] = C4 "  No files loaded yet." RST;
+        rs[22] = DIM GR2 "  Press any key to return   ? help" RST;
+
+        ClearScreen();
+        DrawBreadcrumb("Main Menu  ›  Loaded Files");
+        DrawBox(rs);
+        DrawStatusBar();
+
+        int k = ReadChar();
+        if (k == '?')
+            ShowShortcutsPopup();
+        return;
+    }
+
+    for (;;)
+    {
+        int n = list->count < 8 ? list->count : 8;
+        for (int i = 0; i < n; i++)
+        {
+            FileNode *fn = GetFileByIndex(list, i);
+            TruncateVisible(fn->filename, 48, fname, (int)sizeof(fname));
+            snprintf(labels[i], sizeof(labels[i]), "%s  (%d paragraph%s)",
+                     fname, fn->val.count, fn->val.count == 1 ? "" : "s");
+            ptrs[i] = labels[i];
+        }
+
+        int choice = GenericMenu("LOADED FILES", ptrs, n, "Main Menu  ›  Loaded Files");
+        if (choice < 0)
+            return;
+
+        ScreenShowFilePreview(GetFileByIndex(list, choice));
+    }
 }
 
 static int WrapPlainText(const char *text, char lines[][512], int max_lines, int width)
@@ -1222,16 +1311,19 @@ static int WrapPlainText(const char *text, char lines[][512], int max_lines, int
     return count > 0 ? count : 1;
 }
 
-/* Show the result screen for a set operation. */
 void ScreenShowResult(const char *op_name, const char *a_label,
-                      const char *b_label, const char *result_line)
+                      const char *b_label, const char *result_line,
+                      size_t cardinality, int a_subset_b, int b_subset_a)
 {
-    static char title[160], metaA[180], metaB[180], result_rows[10][512], display_rows[10][640];
+    static char title[160], metaA[180], metaB[180], relation[220], result_rows[10][512], display_rows[10][640];
     int result_count = WrapPlainText(result_line, result_rows, 10, 84);
 
     snprintf(title, sizeof(title), C10 BLD "  ◆  RESULT  │  %s" RST, op_name);
     snprintf(metaA, sizeof(metaA), C7 "  A" RST C4 "  ──  " RST C12 "%s" RST, a_label);
     snprintf(metaB, sizeof(metaB), C7 "  B" RST C4 "  ──  " RST C12 "%s" RST, b_label);
+    snprintf(relation, sizeof(relation),
+             C7 "  |Result|" RST C4 "  ──  " RST C12 "%zu" RST C4 "     A ⊆ B: " RST C12 "%s" RST C4 "     B ⊆ A: " RST C12 "%s" RST,
+             cardinality, a_subset_b ? "yes" : "no", b_subset_a ? "yes" : "no");
 
     const char *rs[RSLOTS];
     for (int i = 0; i < RSLOTS; i++)
@@ -1241,29 +1333,35 @@ void ScreenShowResult(const char *op_name, const char *a_label,
     rs[2] = C5 "  ────────────────────────────────────────────────────────────────────────────────" RST;
     rs[4] = metaA;
     rs[5] = metaB;
-    rs[7] = C8 BLD "  Computed Set" RST C4 "  ═══════════════════════════════════════════════════════" RST;
+    rs[6] = relation;
+    rs[8] = C8 BLD "  Computed Set" RST C4 "  ═══════════════════════════════════════════════════════" RST;
 
     for (int i = 0; i < result_count && i < 10; i++)
     {
         snprintf(display_rows[i], sizeof(display_rows[i]),
                  C9 "  %02d" RST C4 "  │  " RST C12 "%s" RST,
                  i + 1, result_rows[i]);
-        rs[9 + i] = display_rows[i];
+        rs[10 + i] = display_rows[i];
     }
 
     rs[21] = C4 "  ────────────────────────────────────────────────────────────────────────────────" RST;
     rs[22] = DIM GR2 "  Press any key to return" RST;
 
-    ClearScreen();
-    DrawBreadcrumb("Main Menu  ›  Set Operations  ›  Result");
-    DrawFullBox(rs);
-    DrawStatusBar();
-    ReadChar();
+    for (;;)
+    {
+        ClearScreen();
+        DrawBreadcrumb("Main Menu  ›  Set Operations  ›  Result");
+        DrawFullBox(rs);
+        DrawStatusBar();
+
+        int k = ReadChar();
+        if (k == '?')
+            ShowShortcutsPopup();
+        else
+            return;
+    }
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
- *  FUTURISTIC LOADING ANIMATION
- * ───────────────────────────────────────────────────────────────────────────── */
 static void ShowLoadingBar(const char *label, int duration_ms)
 {
     int tw, th;
@@ -1275,7 +1373,8 @@ static void ShowLoadingBar(const char *label, int duration_ms)
     if (step_ms < 1)
         step_ms = 1;
     int col = (tw - panel_w) / 2;
-    if (col < 0) col = 0;
+    if (col < 0)
+        col = 0;
     int row = th / 2 - 4;
     if (row < 1)
         row = 1;
@@ -1316,10 +1415,14 @@ static void ShowLoadingBar(const char *label, int duration_ms)
             int fill = (i * bar_w) / steps;
             if (j < fill)
             {
-                if ((j + i) % 11 == 0)    printf(C12 "█" RST);
-                else if (j < bar_w / 3)   printf(C6 "█" RST);
-                else if (j < 2 * bar_w / 3) printf(C8 "█" RST);
-                else                       printf(C10 "█" RST);
+                if ((j + i) % 11 == 0)
+                    printf(C12 "█" RST);
+                else if (j < bar_w / 3)
+                    printf(C6 "█" RST);
+                else if (j < 2 * bar_w / 3)
+                    printf(C8 "█" RST);
+                else
+                    printf(C10 "█" RST);
             }
             else
                 printf(DIM C4 "░" RST);
@@ -1357,9 +1460,6 @@ static void ShowLoadingBar(const char *label, int duration_ms)
     SleepMillis(200);
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
- *  HELPERS: collect BST words into a single display string
- * ───────────────────────────────────────────────────────────────────────────── */
 static void InorderToPrettyBuffer(WordNode *r, char *buf, int bufsz, int *pos, int *first)
 {
     if (!r || *pos >= bufsz - 1)
@@ -1392,7 +1492,6 @@ static void BstToString(WordNode *r, char *buf, int bufsz)
     snprintf(buf + pos, bufsz - pos, " }");
 }
 
-/* Build a display string for a SentenceList result using original text */
 static void SentenceListToString(SentenceList list, char *buf, int bufsz)
 {
     int pos = 0;
@@ -1407,12 +1506,12 @@ static void SentenceListToString(SentenceList list, char *buf, int bufsz)
     {
         const char *text = (cur->original && cur->original[0]) ? cur->original : "(?)";
         int n = snprintf(buf + pos, bufsz - pos, "S%d: %s  •  ", cur->id, text);
-        if (n > 0) pos += n;
+        if (n > 0)
+            pos += n;
         cur = Next(cur);
     }
 }
 
-/* Build a display string for a ParagraphList result using original text */
 static void ParagraphListToString(ParagraphList list, char *buf, int bufsz)
 {
     int pos = 0;
@@ -1427,12 +1526,12 @@ static void ParagraphListToString(ParagraphList list, char *buf, int bufsz)
     {
         const char *text = (cur->original && cur->original[0]) ? cur->original : "(?)";
         int n = snprintf(buf + pos, bufsz - pos, "P%d: %s  •  ", cur->id, text);
-        if (n > 0) pos += n;
+        if (n > 0)
+            pos += n;
         cur = Next(cur);
     }
 }
 
-/* Build label arrays for paragraphs in a file */
 static int BuildParagraphLabels(ParagraphList *pl, char labels[][80], const char **ptrs, int max)
 {
     int n = pl->count < max ? pl->count : max;
@@ -1445,13 +1544,11 @@ static int BuildParagraphLabels(ParagraphList *pl, char labels[][80], const char
     return n;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
- *  FULL-PAGE RESULT with scrollable output to stdout
- * ───────────────────────────────────────────────────────────────────────────── */
 static void ScreenShowFullResult(const char *op_name, const char *a_label,
-                                  const char *b_label, const char *level_name,
-                                  WordNode *word_result, SentenceList *sent_result,
-                                  ParagraphList *para_result)
+                                 const char *b_label, const char *level_name,
+                                 WordNode *word_result, SentenceList *sent_result,
+                                 ParagraphList *para_result, size_t cardinality,
+                                 int a_subset_b, int b_subset_a)
 {
     char rbuf[4096];
     rbuf[0] = '\0';
@@ -1464,27 +1561,16 @@ static void ScreenShowFullResult(const char *op_name, const char *a_label,
 
     char title[128];
     snprintf(title, sizeof(title), "%s  %s", level_name, op_name);
-    ScreenShowResult(title, a_label, b_label, rbuf);
+    ScreenShowResult(title, a_label, b_label, rbuf, cardinality, a_subset_b, b_subset_a);
 }
 
 static const char *OP_NAMES[] = {"UNION", "INTERSECTION", "DIFFERENCE"};
 
 static int IsReadableFile(const char *filename)
 {
-    if (filename == NULL || filename[0] == '\0')
-        return 0;
-
-    FILE *file = fopen(filename, "r");
-    if (file == NULL)
-        return 0;
-
-    fclose(file);
-    return 1;
+    return IsReadableRegularFile(filename);
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
- *  MAIN LOOP
- * ───────────────────────────────────────────────────────────────────────────── */
 void RunMenu(void)
 {
     printf(HCUR);
@@ -1501,81 +1587,80 @@ void RunMenu(void)
         switch (choice)
         {
 
-        case 0:
-        { /* ── Load File ── */
-            char filename[512];
-            int got = ScreenLoadFile(filename, sizeof(filename));
-            if (!got)
-                break;
-            if (!IsReadableFile(filename))
+            case 0:
             {
-                NotifyError("Invalid path — file could not be opened.");
+                for (;;)
+                {
+                    char filename[512];
+                    int got = ScreenLoadFile(filename, sizeof(filename));
+                    if (!got)
+                        break;
+                    if (!IsReadableFile(filename))
+                    {
+                        NotifyError("Invalid path — file could not be opened.");
+                        continue;
+                    }
+                    ShowLoadingBar("Parsing file...", 600);
+                    if (AddFile(&file_list, filename))
+                        NotifyOk("File loaded successfully.");
+                    else
+                        NotifyError("Invalid path — file could not be opened.");
+                }
                 break;
             }
-            ShowLoadingBar("Parsing file...", 600);
-            if (AddFile(&file_list, filename))
-                NotifyOk("File loaded successfully.");
-            else
-                NotifyError("Invalid path — file could not be opened.");
-            break;
-        }
 
         case 1:
-        { /* ── List Loaded Files ── */
-            const char *fnames[8];
-            int pcounts[8];
-            int n = file_list.count < 8 ? file_list.count : 8;
-            for (int i = 0; i < n; i++)
-            {
-                FileNode *fn = GetFileByIndex(&file_list, i);
-                fnames[i] = fn->filename;
-                pcounts[i] = fn->val.count;
-            }
-            ScreenListFiles(fnames, pcounts, n);
+        {
+            ScreenExploreLoadedFiles(&file_list);
             break;
         }
 
         case 2:
-        { /* ── Set Operations ── */
+        {
             if (file_list.count == 0)
             {
                 NotifyError("No files loaded — please load a file first.");
                 break;
             }
             int level = MenuLevel();
-            if (level == -1) break;
+            if (level == -1)
+                break;
             int op = MenuOperation();
-            if (level == -1 || op == -1) break;
+            if (level == -1 || op == -1)
+                break;
 
-            /* Build file name array for pickers */
             const char *fnames[8];
             int fn_count = file_list.count < 8 ? file_list.count : 8;
             for (int i = 0; i < fn_count; i++)
                 fnames[i] = GetFileByIndex(&file_list, i)->filename;
 
             if (level == 0)
-            { /* ── Word Level (between paragraphs) ── */
-                /* Pick file A → paragraph A */
+            {
+
                 int fa = MenuPickFile(fnames, fn_count, "Set Ops  ›  Word  ›  File A");
-                if (fa < 0) break;
+                if (fa < 0)
+                    break;
                 FileNode *fnA = GetFileByIndex(&file_list, fa);
-                char plA[9][80]; const char *ppA[9];
+                char plA[9][80];
+                const char *ppA[9];
                 int npA = BuildParagraphLabels(&fnA->val, plA, ppA, 9);
                 int pa = MenuPickParagraph(ppA, npA, "Set Ops  ›  Word  ›  Para A");
-                if (pa < 0) break;
+                if (pa < 0)
+                    break;
                 ParagraphNode *parA = GetParagraphByIndex(&fnA->val, pa);
 
-                /* Pick file B → paragraph B */
                 int fb = MenuPickFile(fnames, fn_count, "Set Ops  ›  Word  ›  File B");
-                if (fb < 0) break;
+                if (fb < 0)
+                    break;
                 FileNode *fnB = GetFileByIndex(&file_list, fb);
-                char plB[9][80]; const char *ppB[9];
+                char plB[9][80];
+                const char *ppB[9];
                 int npB = BuildParagraphLabels(&fnB->val, plB, ppB, 9);
                 int pb = MenuPickParagraph(ppB, npB, "Set Ops  ›  Word  ›  Para B");
-                if (pb < 0) break;
+                if (pb < 0)
+                    break;
                 ParagraphNode *parB = GetParagraphByIndex(&fnB->val, pb);
 
-                /* Collect all words from all sentences in each paragraph */
                 WordNode *allA = NULL, *allB = NULL;
                 for (SentenceNode *s = parA->val.head; s; s = Next(s))
                     CopyTree(s->val, &allA);
@@ -1584,82 +1669,107 @@ void RunMenu(void)
 
                 ShowLoadingBar("Computing word operation...", 800);
 
-                /* Execute */
                 WordNode *result = NULL;
-                if (op == 0)      result = WordUnion(allA, allB);
-                else if (op == 1) result = WordIntersection(allA, allB);
-                else              result = WordDifference(allA, allB);
+                if (op == 0)
+                    result = WordUnion(allA, allB);
+                else if (op == 1)
+                    result = WordIntersection(allA, allB);
+                else
+                    result = WordDifference(allA, allB);
 
                 char labA[80], labB[80];
                 snprintf(labA, sizeof(labA), "File%d P%d", fa, pa);
                 snprintf(labB, sizeof(labB), "File%d P%d", fb, pb);
-                ScreenShowFullResult(OP_NAMES[op], labA, labB, "WORD", result, NULL, NULL);
+                ScreenShowFullResult(OP_NAMES[op], labA, labB, "WORD", result, NULL, NULL,
+                                     WordCardinality(result),
+                                     WordIsSubset(allA, allB),
+                                     WordIsSubset(allB, allA));
                 FreeTree(&allA);
                 FreeTree(&allB);
                 FreeTree(&result);
             }
             else if (level == 1)
-            { /* ── Sentence Level ── */
+            {
                 int fa = MenuPickFile(fnames, fn_count, "Set Ops  ›  Sentence  ›  File A");
-                if (fa < 0) break;
+                if (fa < 0)
+                    break;
                 FileNode *fnA = GetFileByIndex(&file_list, fa);
-                char plA[9][80]; const char *ppA[9];
+                char plA[9][80];
+                const char *ppA[9];
                 int npA = BuildParagraphLabels(&fnA->val, plA, ppA, 9);
                 int pa = MenuPickParagraph(ppA, npA, "Set Ops  ›  Sentence  ›  Para A");
-                if (pa < 0) break;
+                if (pa < 0)
+                    break;
                 ParagraphNode *parA = GetParagraphByIndex(&fnA->val, pa);
 
                 int fb = MenuPickFile(fnames, fn_count, "Set Ops  ›  Sentence  ›  File B");
-                if (fb < 0) break;
+                if (fb < 0)
+                    break;
                 FileNode *fnB = GetFileByIndex(&file_list, fb);
-                char plB[9][80]; const char *ppB[9];
+                char plB[9][80];
+                const char *ppB[9];
                 int npB = BuildParagraphLabels(&fnB->val, plB, ppB, 9);
                 int pb = MenuPickParagraph(ppB, npB, "Set Ops  ›  Sentence  ›  Para B");
-                if (pb < 0) break;
+                if (pb < 0)
+                    break;
                 ParagraphNode *parB = GetParagraphByIndex(&fnB->val, pb);
 
                 SentenceList result;
-                if (op == 0)      result = SentenceUnion(parA->val, parB->val);
-                else if (op == 1) result = SentenceIntersection(parA->val, parB->val);
-                else              result = SentenceDifference(parA->val, parB->val);
+                if (op == 0)
+                    result = SentenceUnion(parA->val, parB->val);
+                else if (op == 1)
+                    result = SentenceIntersection(parA->val, parB->val);
+                else
+                    result = SentenceDifference(parA->val, parB->val);
 
                 ShowLoadingBar("Computing sentence operation...", 800);
 
                 char labA[80], labB[80];
                 snprintf(labA, sizeof(labA), "File%d P%d", fa, pa);
                 snprintf(labB, sizeof(labB), "File%d P%d", fb, pb);
-                ScreenShowFullResult(OP_NAMES[op], labA, labB, "SENTENCE", NULL, &result, NULL);
+                ScreenShowFullResult(OP_NAMES[op], labA, labB, "SENTENCE", NULL, &result, NULL,
+                                     SentenceCardinality(result),
+                                     SentenceIsSubset(parA->val, parB->val),
+                                     SentenceIsSubset(parB->val, parA->val));
                 FreeSentenceList(&result);
             }
             else
-            { /* ── Paragraph Level ── */
+            {
                 if (file_list.count < 2)
                 {
                     NotifyError("Need at least 2 files for paragraph operations.");
                     break;
                 }
                 int fa = MenuPickFile(fnames, fn_count, "Set Ops  ›  Paragraph  ›  File A");
-                if (fa < 0) break;
+                if (fa < 0)
+                    break;
                 int fb = MenuPickFile(fnames, fn_count, "Set Ops  ›  Paragraph  ›  File B");
-                if (fb < 0) break;
+                if (fb < 0)
+                    break;
                 FileNode *fnA = GetFileByIndex(&file_list, fa);
                 FileNode *fnB = GetFileByIndex(&file_list, fb);
 
                 ParagraphList result;
-                if (op == 0)      result = ParagraphUnion(fnA->val, fnB->val);
-                else if (op == 1) result = ParagraphIntersection(fnA->val, fnB->val);
-                else              result = ParagraphDifference(fnA->val, fnB->val);
+                if (op == 0)
+                    result = ParagraphUnion(fnA->val, fnB->val);
+                else if (op == 1)
+                    result = ParagraphIntersection(fnA->val, fnB->val);
+                else
+                    result = ParagraphDifference(fnA->val, fnB->val);
 
                 ShowLoadingBar("Computing paragraph operation...", 800);
 
-                ScreenShowFullResult(OP_NAMES[op], fnA->filename, fnB->filename, "PARAGRAPH", NULL, NULL, &result);
+                ScreenShowFullResult(OP_NAMES[op], fnA->filename, fnB->filename, "PARAGRAPH", NULL, NULL, &result,
+                                     ParagraphCardinality(result),
+                                     ParagraphIsSubset(fnA->val, fnB->val),
+                                     ParagraphIsSubset(fnB->val, fnA->val));
                 FreeParagraphList(&result);
             }
             break;
         }
 
         case 3:
-        { /* ── Exit ── */
+        {
             FreeFileList(&file_list);
             ClearScreen();
             int tw, th;
