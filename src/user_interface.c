@@ -296,7 +296,7 @@ static void DrawBox(const char *rslots[RSLOTS])
                "══════════"
                "══════════"
                "══════════"
-               "══════════"
+               "═════════"
                "╦"
                "══════════"
                "══════════"
@@ -326,7 +326,7 @@ static void DrawBox(const char *rslots[RSLOTS])
                "══════════"
                "══════════"
                "══════════"
-               "══════════"
+               "═════════"
                "╩"
                "══════════"
                "══════════"
@@ -727,7 +727,14 @@ static void ShowFullscreenNotice(void)
     int m = th / 2 - 4;
     CenterPrint(m,     C8 BLD, "┌────────────────────────────────────────────────────┐");
     CenterPrint(m + 1, C8 BLD, "│                                                    │");
-    CenterPrint(m + 2, C7 BLD, "│     ⚠  PLEASE PUT YOUR TERMINAL IN FULLSCREEN  ⚠  │");
+    
+    int box_width = 54;
+    int col = (tw - box_width) / 2;
+    if (col < 0) col = 0;
+    MoveCursor(m + 2, col);
+    printf("%s│     ⚠  PLEASE PUT YOUR TERMINAL IN FULLSCREEN  ⚠\033[%dG│" RST "\033[K", C7 BLD, col + box_width);
+    FlushOutput();
+
     CenterPrint(m + 3, C8 BLD, "│                                                    │");
     CenterPrint(m + 4, C9,     "│           Minimum recommended: 120 x 35            │");
     CenterPrint(m + 5, C8 BLD, "│                                                    │");
