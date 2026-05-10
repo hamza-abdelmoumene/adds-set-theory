@@ -1,11 +1,3 @@
-Computer science relies on the study of data and algorithms.
-Efficient programs require careful selection of data structures.
-Every solution must balance memory usage and execution speed.
-
-Binary trees organise data for fast search and retrieval.
-Each node in the tree contains a unique key value.
-Inorder traversal of a binary tree visits nodes in sorted order.
-
-Memory management is a critical aspect of systems programming.
-Dynamic allocation gives programs flexibility during runtime.
-Pointer connections link nodes together in linked structures.
+Quick test file.
+This is short and simple.
+Use it for fast validation.
