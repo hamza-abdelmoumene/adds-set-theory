@@ -10,13 +10,13 @@ void Search(const char *word, WordNode *r, WordNode **p, WordNode **q)
     // handle edge cases
     if (p == NULL || q == NULL)
     {
-        fprintf(stderr, "Search: output pointers must not be NULL\n");
+        PrintError("Search", "output pointers must not be NULL");
         return;
     }
 
     if (word == NULL)
     {
-        fprintf(stderr, "Search: word must not be NULL\n");
+        PrintError("Search", "word must not be NULL");
         *p = NULL;
         *q = NULL;
         return;
@@ -24,7 +24,7 @@ void Search(const char *word, WordNode *r, WordNode **p, WordNode **q)
 
     if (word[0] == '\0')
     {
-        fprintf(stderr, "Search: word must not be empty\n");
+        PrintError("Search", "word must not be empty");
         *p = NULL;
         *q = NULL;
         return;
@@ -32,7 +32,7 @@ void Search(const char *word, WordNode *r, WordNode **p, WordNode **q)
 
     if (strlen(word) >= MAX_WORD)
     {
-        fprintf(stderr, "Search: word exceeds MAX_WORD (%d)\n", MAX_WORD);
+        PrintError("Search", "word exceeds MAX_WORD");
         *p = NULL;
         *q = NULL;
         return;
@@ -63,19 +63,19 @@ bool Insert(const char *word, WordNode **r)
 
     if (word == NULL)
     {
-        fprintf(stderr, "Insert: word must not be NULL\n");
+        PrintError("Insert", "word must not be NULL");
         return false;
     }
 
     if (word[0] == '\0')
     {
-        fprintf(stderr, "Insert: word must not be empty\n");
+        PrintError("Insert", "word must not be empty");
         return false;
     }
 
     if (strlen(word) >= MAX_WORD)
     {
-        fprintf(stderr, "Insert: word exceeds MAX_WORD (%d)\n", MAX_WORD);
+        PrintError("Insert", "word exceeds MAX_WORD");
         return false;
     }
 
@@ -125,7 +125,7 @@ void FreeTree(WordNode **r)
     if (r == NULL || *r == NULL)
     {
         if (r == NULL)
-            fprintf(stderr, "FreeTree: root pointer must not be NULL\n");
+            PrintError("FreeTree", "root pointer must not be NULL");
         return;
     }
 
@@ -145,7 +145,7 @@ void CopyTree(WordNode *src, WordNode **dest)
 
     if (dest == NULL)
     {
-        fprintf(stderr, "CopyTree: destination pointer must not be NULL\n");
+        PrintError("CopyTree", "destination pointer must not be NULL");
         return;
     }
 
@@ -160,7 +160,7 @@ void CollectWords(WordNode *root, char ***array, size_t *size, size_t *capacity)
 {
     if (array == NULL || size == NULL || capacity == NULL)
     {
-        fprintf(stderr, "CollectWords: output parameters must not be NULL\n");
+        PrintError("CollectWords", "output parameters must not be NULL");
         return;
     }
 
@@ -174,34 +174,17 @@ void CollectWords(WordNode *root, char ***array, size_t *size, size_t *capacity)
     if (*capacity == 0)
     {
         *capacity = 8;
-        *array = (char **)malloc((*capacity) * sizeof(char *));
-        if (*array == NULL)
-        {
-            fprintf(stderr, "CollectWords: out of memory\n");
-            exit(EXIT_FAILURE);
-        }
+        *array = (char **)CheckedMalloc((*capacity) * sizeof(char *), "CollectWords");
     }
     else if (*size >= *capacity)
     {
         size_t new_cap = (*capacity) * 2;
-        char **tmp = (char **)realloc(*array, new_cap * sizeof(char *));
-        if (tmp == NULL)
-        {
-            fprintf(stderr, "CollectWords: out of memory\n");
-            exit(EXIT_FAILURE);
-        }
-        *array = tmp;
+        *array = (char **)CheckedRealloc(*array, new_cap * sizeof(char *), "CollectWords");
         *capacity = new_cap;
     }
 
     // copy the word string into the array
-    char *copy = (char *)malloc(strlen(NodeValue(root)) + 1);
-    if (copy == NULL)
-    {
-        fprintf(stderr, "CollectWords: out of memory\n");
-        exit(EXIT_FAILURE);
-    }
-    strcpy(copy, NodeValue(root));
+    char *copy = CheckedStrDup(NodeValue(root), "CollectWords");
     (*array)[(*size)++] = copy;
 
     CollectWords(RC(root), array, size, capacity);

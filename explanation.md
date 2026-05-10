@@ -72,6 +72,11 @@ The core data structures strictly follow the "Machine Abstraite" macros defined 
 ### 4.2. `utils.c` — Cross-Platform Utilities
 | Function | Role | Logic |
 |----------|------|-------|
+| `PrintError(context, message)` | Standard error printer. | Prints all non-fatal internal errors in one consistent `Context: message` format. |
+| `HandleError(context, message, fatal)` | Central error handler. | Calls `PrintError`; when `fatal != 0`, exits the program. Used for unrecoverable cases such as allocation failure. |
+| `CheckedMalloc(size, context)` | Safe allocation. | Wraps `malloc`, normalizes zero-byte requests to 1 byte, and terminates through `HandleError` if allocation fails. |
+| `CheckedRealloc(ptr, size, context)` | Safe reallocation. | Wraps `realloc` and terminates through `HandleError` on out-of-memory. |
+| `CheckedStrDup(s, context)` | Safe string duplication. | Duplicates strings using `CheckedMalloc`; returns `NULL` only when the source string is `NULL`. |
 | `SleepMillis(ms)` | Cross-platform sleep. | Suspends execution using `Sleep()` on Windows or `nanosleep()` on POSIX. |
 | `InitTerminal()` | Terminal initialization. | Enables ANSI escapes and UTF-8 codepage on Windows. No-op on POSIX. |
 | `ReadChar()` | Blocking key reader. | Sets terminal to raw mode, reads a single keystroke directly without waiting for Enter. |
@@ -125,7 +130,7 @@ Responsible for character-by-character reading and building the 3-level data str
 | `FlushWord(s)` | Word finalizer. | Null-terminates the buffer, normalizes it, and if valid, appends to the `ParserState` dynamic word array. |
 | `FlushSentence(s)` | Sentence finalizer. | Sorts collected words, calls `MedianInsert` to build a perfectly balanced BST, then calls `AddSentence`. |
 | `FlushParagraph(s, &r)` | Paragraph finalizer. | Builds the O(1) sentence index, copies the accumulated paragraph original text, and calls `AddParagraph`. |
-| `ParseFile(filename)` | Main logic loop. | Reads `fgetc` until `EOF`. Space/Tab triggers word boundary. `.` triggers sentence boundary. `\n` triggers paragraph boundary. It builds the structure dynamically without holding the whole file in memory at once. |
+| `ParseFile(filename)` | Main logic loop. | Validates the filename, opens the file, then reads `fgetc` until `EOF`. Space/Tab triggers word boundary. `.` triggers sentence boundary. `\n` triggers paragraph boundary. Allocation failures go through the checked utility helpers. |
 
 ### 4.7. `file_list.c` — File Management Layer
 Top-level linked list holding parsed files.
@@ -133,7 +138,7 @@ Top-level linked list holding parsed files.
 | Function | Role | Logic |
 |----------|------|-------|
 | `CreateFileList()` | Initialization. | Returns empty FileList. |
-| `AddFile(&list, fname)` | Parses and appends. | Allocates a `FileNode`, calls `ParseFile()`, and links via tail. |
+| `AddFile(&list, fname)` | Validates, parses, and appends. | Returns `0` for invalid input/unreadable paths, preventing fake loaded files with zero paragraphs. On success, allocates a `FileNode`, calls `ParseFile()`, links via tail, and returns `1`. |
 | `GetFileByIndex(...)` | Random access. | Returns `index[i]`. |
 | `FreeFileList(&list)` | Complete cleanup. | Frees everything recursively when exiting the application. |
 
@@ -159,14 +164,21 @@ Handles all visual rendering, ensuring the application stays within the 100-char
 |----------|------|-------|
 | `RunAnimation()` | Launch sequence. | Orchestrates the futuristic ESI Logo, TP headers, Accomplishment banners, and separator animations with precisely timed `SleepMillis`. |
 | `DrawBox(rslots)` | View layout. | Draws the dual-pane ASCII box. Hard-clamps strings strictly to 48 columns using `TruncateVisible()` to guarantee no visual bleed or line-wrapping bugs. |
-| `GenericMenu(...)` | Interactive engine. | Maps input keys (Arrows/Numbers) to selections. Re-renders the `DrawBox` asynchronously without screen flashing. |
-| `MenuOperation()` | Operation selector. | Shows mathematical definitions using `∪`, `∩`, `\`, `∈`, `∉`, `∨`, `∧`. |
-| `ShowLoadingBar(...)` | Progress visualizer. | Renders a high-quality loading bar using `█`, `▓`, `▒`, `░` with progressive percentage and spinner effects. |
+| `DrawFullBox(rslots)` | Full-width result layout. | Draws a single 100-column rectangle without the ESI/ADDS/TP left panel, used by result display screens. |
+| `GenericMenu(...)` | Interactive engine. | Maps input keys (Arrows/Numbers/ESC) to selections and re-renders the `DrawBox` menu. |
+| `MenuMain()` | Main selector. | Presents Load File, List Loaded Files, Set Operations, and Exit. The old Display Structure option was removed. |
+| `MenuOperation()` | Operation selector. | Shows each operation with spacing: the operation name plus plain-language definition on one line, and the mathematical definition on the next line. |
+| `ScreenLoadFile()` / `RunMenu()` | File loading flow. | Reads a path, rejects unreadable files with `Invalid path — file could not be opened.`, and only then shows loading and appends the file. |
+| `ShowLoadingBar(...)` | Progress visualizer. | Renders a centered bordered progress panel with spinner, percentage, gradient fill, and expanding separator line. |
+| `ScreenShowResult(...)` | Result screen. | Uses `DrawFullBox`, wraps long result text, numbers displayed rows, and shows `∅` for empty results. |
 | `ParagraphListToString`| Result formatting. | Safely stringifies Paragraph structures back into readable format by referring strictly to the `char *original` stored during parsing. |
 
 ---
 
-## 5. Architectural Integrity and Memory Saftey
+## 5. Architectural Integrity and Memory Safety
 - **Single Source of Truth**: The original text from the parser is preserved perfectly in `char *original` fields at the Paragraph and Sentence level. Reconstructed outputs use this text, completely solving formatting/punctuation drift.
 - **Set Equivalency over Memory Equality**: When comparing two sentences for intersection, they are considered equal if their unique Word BSTs are equal, not just if their original strings match. This allows robust set operations independently of minor punctuation differences.
+- **Centralized Error Handling**: Allocation failures and internal invalid inputs now route through `PrintError`, `HandleError`, `CheckedMalloc`, `CheckedRealloc`, and `CheckedStrDup` in `utils.c`.
+- **Invalid File Protection**: The UI and `AddFile` both reject unreadable paths before appending a `FileNode`, so invalid paths no longer appear as loaded files with zero paragraphs.
+- **Menu Back Behavior**: `ESC` from Set Operations submenus unwinds cleanly to the main menu instead of re-entering a redraw loop.
 - **Recursive Teardown**: Closing the application automatically unwinds `FileNode` → `ParagraphNode` → `SentenceNode` → `WordNode` memory paths, ensuring 0 leaks.

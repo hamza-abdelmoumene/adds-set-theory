@@ -12,17 +12,19 @@ SentenceList CreateSentenceList(void)
 // Append a new sentence (represented by its word BST) to the list.
 void AddSentence(SentenceList *list, WordNode *bst_root, const char *original)
 {
+    if (list == NULL)
+    {
+        PrintError("AddSentence", "list must not be NULL");
+        return;
+    }
+
     SentenceNode *new_node;
     Allocate(new_node);
     Ass_val(new_node, bst_root);
     Ass_adr(new_node, NULL);
     new_node->id = list->count;
     if (original)
-    {
-        new_node->original = (char *)malloc(strlen(original) + 1);
-        if (new_node->original)
-            strcpy(new_node->original, original);
-    }
+        new_node->original = CheckedStrDup(original, "AddSentence");
     else
         new_node->original = NULL;
 
@@ -60,6 +62,12 @@ SentenceNode *GetSentence(SentenceList list, int id)
 // Build the index array after all sentences are added for O(1) access by id.
 void BuildSentenceIndex(SentenceList *list)
 {
+    if (list == NULL)
+    {
+        PrintError("BuildSentenceIndex", "list must not be NULL");
+        return;
+    }
+
     // guard against empty list — malloc(0) is UB on some platforms
     if (list->count == 0)
     {
@@ -68,12 +76,8 @@ void BuildSentenceIndex(SentenceList *list)
         return;
     }
 
-    list->index = (SentenceNode **)malloc(list->count * sizeof(SentenceNode *));
-    if (list->index == NULL)
-    {
-        fprintf(stderr, "BuildSentenceIndex: out of memory\n");
-        exit(EXIT_FAILURE);
-    }
+    list->index = (SentenceNode **)CheckedMalloc(list->count * sizeof(SentenceNode *),
+                                                 "BuildSentenceIndex");
 
     list->capacity = list->count;
 
@@ -88,7 +92,7 @@ void BuildSentenceIndex(SentenceList *list)
 // Retrieve a sentence node in O(1) using the index array.
 SentenceNode *GetSentenceByIndex(SentenceList *list, int i)
 {
-    if (i < 0 || i >= list->count)
+    if (list == NULL || i < 0 || i >= list->count)
         return NULL;
 
     return list->index[i];
@@ -110,6 +114,9 @@ void PrintSentences(SentenceList list)
 // Free all sentences, their associated BSTs, and the index array from memory.
 void FreeSentenceList(SentenceList *list)
 {
+    if (list == NULL)
+        return;
+
     SentenceNode *current = list->head;
 
     while (current != NULL)

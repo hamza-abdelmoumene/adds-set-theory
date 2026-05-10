@@ -1,6 +1,8 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <stddef.h>
+
 /**
  * @file utils.h
  * @brief Utility functions for text processing and terminal helpers.
@@ -32,6 +34,48 @@
 #define GRN "\033[38;2;60;210;110m"
 
 /* Cross-platform terminal helpers */
+
+/* Error handling helpers */
+
+/**
+ * @brief Prints a standardized non-fatal error message to stderr.
+ * @param context Name of the function/module where the error happened.
+ * @param message Human-readable explanation of the error.
+ */
+void PrintError(const char *context, const char *message);
+
+/**
+ * @brief Handles an error and optionally terminates the program.
+ * @param context Name of the function/module where the error happened.
+ * @param message Human-readable explanation of the error.
+ * @param fatal Non-zero to exit after printing the error.
+ */
+void HandleError(const char *context, const char *message, int fatal);
+
+/**
+ * @brief Allocates memory or terminates with a standardized error.
+ * @param size Number of bytes to allocate.
+ * @param context Name of the allocation site.
+ * @return Allocated memory block.
+ */
+void *CheckedMalloc(size_t size, const char *context);
+
+/**
+ * @brief Reallocates memory or terminates with a standardized error.
+ * @param ptr Existing allocation, or NULL.
+ * @param size Number of bytes to allocate.
+ * @param context Name of the allocation site.
+ * @return Reallocated memory block.
+ */
+void *CheckedRealloc(void *ptr, size_t size, const char *context);
+
+/**
+ * @brief Duplicates a string or terminates with a standardized error.
+ * @param s String to duplicate.
+ * @param context Name of the allocation site.
+ * @return Newly allocated string copy, or NULL when s is NULL.
+ */
+char *CheckedStrDup(const char *s, const char *context);
 
 /**
  * @brief Suspends execution for the specified number of milliseconds.

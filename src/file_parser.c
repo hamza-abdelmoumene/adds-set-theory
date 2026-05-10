@@ -8,14 +8,7 @@
 // Duplicate a string — portable replacement for strdup.
 static char *StrDup(const char *s)
 {
-    char *copy = (char *)malloc(strlen(s) + 1);
-    if (copy == NULL)
-    {
-        fprintf(stderr, "StrDup: out of memory\n");
-        exit(EXIT_FAILURE);
-    }
-    strcpy(copy, s);
-    return copy;
+    return CheckedStrDup(s, "StrDup");
 }
 
 //-----------------------------------------------------------------------------
@@ -40,13 +33,9 @@ static void FlushWord(ParserState *s)
     if (s->word_count >= s->word_capacity)
     {
         s->word_capacity = (s->word_capacity == 0) ? 8 : s->word_capacity * 2;
-        char **tmp = (char **)realloc(s->words, s->word_capacity * sizeof(char *));
-        if (tmp == NULL)
-        {
-            fprintf(stderr, "FlushWord: out of memory\n");
-            exit(EXIT_FAILURE);
-        }
-        s->words = tmp;
+        s->words = (char **)CheckedRealloc(s->words,
+                                           s->word_capacity * sizeof(char *),
+                                           "FlushWord");
     }
 
     s->words[s->word_count++] = StrDup(s->word);
@@ -101,14 +90,14 @@ ParagraphList ParseFile(const char *filename)
 
     if (filename == NULL)
     {
-        fprintf(stderr, "ParseFile: filename must not be NULL\n");
+        PrintError("ParseFile", "filename must not be NULL");
         return result;
     }
 
     FILE *file = fopen(filename, "r");
     if (!file)
     {
-        fprintf(stderr, "ParseFile: cannot open file '%s'\n", filename);
+        PrintError("ParseFile", "cannot open file");
         return result;
     }
 

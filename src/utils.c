@@ -1,10 +1,62 @@
 #define _POSIX_C_SOURCE 199309L
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <ctype.h>
 #include "../include/utils.h"
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ *  ERROR HANDLING
+ * ───────────────────────────────────────────────────────────────────────────── */
+void PrintError(const char *context, const char *message)
+{
+    const char *where = (context && context[0]) ? context : "Error";
+    const char *what = (message && message[0]) ? message : "unexpected error";
+    fprintf(stderr, "%s: %s\n", where, what);
+}
+
+void HandleError(const char *context, const char *message, int fatal)
+{
+    PrintError(context, message);
+    if (fatal)
+        exit(EXIT_FAILURE);
+}
+
+void *CheckedMalloc(size_t size, const char *context)
+{
+    if (size == 0)
+        size = 1;
+
+    void *ptr = malloc(size);
+    if (ptr == NULL)
+        HandleError(context, "out of memory", 1);
+
+    return ptr;
+}
+
+void *CheckedRealloc(void *ptr, size_t size, const char *context)
+{
+    if (size == 0)
+        size = 1;
+
+    void *new_ptr = realloc(ptr, size);
+    if (new_ptr == NULL)
+        HandleError(context, "out of memory", 1);
+
+    return new_ptr;
+}
+
+char *CheckedStrDup(const char *s, const char *context)
+{
+    if (s == NULL)
+        return NULL;
+
+    char *copy = (char *)CheckedMalloc(strlen(s) + 1, context);
+    strcpy(copy, s);
+    return copy;
+}
 
 /* ─────────────────────────────────────────────────────────────────────────────
  *  CROSS-PLATFORM LAYER
@@ -63,16 +115,18 @@ void InitTerminal(void) {}
 int ReadChar(void)
 {
     struct termios o, n;
-    int c;
+    unsigned char c = 0;
+    ssize_t got;
+
     tcgetattr(STDIN_FILENO, &o);
     n = o;
     n.c_lflag &= (unsigned)~(ICANON | ECHO);
     n.c_cc[VMIN] = 1;
     n.c_cc[VTIME] = 0;
     tcsetattr(STDIN_FILENO, TCSANOW, &n);
-    c = getchar();
+    got = read(STDIN_FILENO, &c, 1);
     tcsetattr(STDIN_FILENO, TCSANOW, &o);
-    return c;
+    return (got == 1) ? (int)c : -1;
 }
 
 /* Non-blocking ~100 ms timeout — used only to drain escape sequences */
@@ -80,16 +134,18 @@ int ReadChar(void)
 int ReadCharNonBlocking(void)
 {
     struct termios o, n;
-    int c;
+    unsigned char c = 0;
+    ssize_t got;
+
     tcgetattr(STDIN_FILENO, &o);
     n = o;
     n.c_lflag &= (unsigned)~(ICANON | ECHO);
     n.c_cc[VMIN] = 0;
     n.c_cc[VTIME] = 1;
     tcsetattr(STDIN_FILENO, TCSANOW, &n);
-    c = getchar();
+    got = read(STDIN_FILENO, &c, 1);
     tcsetattr(STDIN_FILENO, TCSANOW, &o);
-    return (c == EOF) ? -1 : c;
+    return (got == 1) ? (int)c : -1;
 }
 
 /* Retrieve terminal dimensions. */

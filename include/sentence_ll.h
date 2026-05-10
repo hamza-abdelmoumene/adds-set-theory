@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "word_bst.h"
+#include "utils.h"
 
 /**
  * @file sentence_ll.h
@@ -44,13 +45,7 @@ typedef struct SentenceList
 #define ABSTRACT_MACHINE_LIST_MACROS
 static inline void *AllocateImpl(size_t size)
 {
-    void *ptr = malloc(size);
-    if (!ptr)
-    {
-        fprintf(stderr, "Allocate: out of memory\n");
-        exit(EXIT_FAILURE);
-    }
-    return ptr;
+    return CheckedMalloc(size, "Allocate");
 }
 
 #define Allocate(p)    ((p) = AllocateImpl(sizeof(*(p))))

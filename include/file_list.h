@@ -43,8 +43,8 @@ typedef struct FileList
 // Initialize an empty FileList.
 FileList CreateFileList(void);
 
-// Parse a file and append it as a new FileNode. Grows the index automatically.
-void AddFile(FileList *list, const char *filename);
+// Parse a readable file and append it as a new FileNode. Returns 1 on success.
+int AddFile(FileList *list, const char *filename);
 
 // Retrieve a file node in O(1) using the index array.
 FileNode *GetFileByIndex(FileList *list, int i);

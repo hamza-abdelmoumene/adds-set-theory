@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include "utils.h"
 
 /**
  * @file word_bst.h
@@ -39,12 +40,7 @@ typedef struct WordNode
 
 static inline WordNode *AllocateNodeImpl(void)
 {
-    WordNode *node = (WordNode *)malloc(sizeof(WordNode));
-    if (!node)
-    {
-        fprintf(stderr, "AllocateNode: out of memory\n");
-        exit(EXIT_FAILURE);
-    }
+    WordNode *node = (WordNode *)CheckedMalloc(sizeof(WordNode), "AllocateNode");
 
     Ass_LC(node, NULL);
     Ass_RC(node, NULL);

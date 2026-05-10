@@ -3,6 +3,7 @@
 #include <string.h>
 #include "../include/file_list.h"
 #include "../include/file_parser.h"
+#include "../include/utils.h"
 
 // Initialize an empty FileList.
 FileList CreateFileList(void)
@@ -11,19 +12,24 @@ FileList CreateFileList(void)
     return list;
 }
 
-// Parse a file and append it as a new FileNode. Grows the index automatically.
-void AddFile(FileList *list, const char *filename)
+// Parse a readable file and append it as a new FileNode. Grows the index automatically.
+int AddFile(FileList *list, const char *filename)
 {
     if (list == NULL)
     {
-        fprintf(stderr, "AddFile: list must not be NULL\n");
-        return;
+        PrintError("AddFile", "list must not be NULL");
+        return 0;
     }
     if (filename == NULL || filename[0] == '\0')
     {
-        fprintf(stderr, "AddFile: filename must not be NULL or empty\n");
-        return;
+        PrintError("AddFile", "filename must not be NULL or empty");
+        return 0;
     }
+
+    FILE *check = fopen(filename, "r");
+    if (check == NULL)
+        return 0;
+    fclose(check);
 
     // allocate and populate the new node
     FileNode *new_node;
@@ -49,15 +55,11 @@ void AddFile(FileList *list, const char *filename)
     list->count++;
 
     // grow the index array to keep it always up to date
-    FileNode **tmp = (FileNode **)realloc(list->index, list->count * sizeof(FileNode *));
-    if (tmp == NULL)
-    {
-        fprintf(stderr, "AddFile: out of memory growing index\n");
-        exit(EXIT_FAILURE);
-    }
-    list->index                    = tmp;
+    list->index                    = (FileNode **)CheckedRealloc(list->index, list->count * sizeof(FileNode *), "AddFile");
     list->capacity                 = list->count;
     list->index[new_node->id]      = new_node;
+
+    return 1;
 }
 
 // Retrieve a file node in O(1) using the index array.

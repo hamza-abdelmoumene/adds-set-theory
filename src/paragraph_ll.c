@@ -12,10 +12,16 @@ ParagraphList CreateParagraphList(void)
 // Append a new paragraph (represented by its sentence list) to the list.
 void AddParagraph(ParagraphList *list, SentenceList sentence_list, const char *original)
 {
+    if (list == NULL)
+    {
+        PrintError("AddParagraph", "list must not be NULL");
+        return;
+    }
+
     ParagraphNode *new_node;
     Allocate(new_node);
     new_node->id = list->count;
-    new_node->original = original ? strdup(original) : NULL;
+    new_node->original = CheckedStrDup(original, "AddParagraph");
     Ass_val(new_node, sentence_list);
     Ass_adr(new_node, NULL);
 
@@ -66,6 +72,9 @@ void PrintParagraphs(ParagraphList list)
 // Free all paragraphs, sentences, and BSTs from memory.
 void FreeParagraphList(ParagraphList *list)
 {
+    if (list == NULL)
+        return;
+
     ParagraphNode *current = list->head;
 
     while (current != NULL)
@@ -90,6 +99,12 @@ void FreeParagraphList(ParagraphList *list)
 // Build the index array after parsing for O(1) access by index.
 void BuildIndex(ParagraphList *list)
 {
+    if (list == NULL)
+    {
+        PrintError("BuildIndex", "list must not be NULL");
+        return;
+    }
+
     if (list->count == 0)
     {
         list->index    = NULL;
@@ -97,12 +112,8 @@ void BuildIndex(ParagraphList *list)
         return;
     }
 
-    list->index = (ParagraphNode **)malloc(list->count * sizeof(ParagraphNode *));
-    if (list->index == NULL)
-    {
-        fprintf(stderr, "BuildIndex: out of memory\n");
-        exit(EXIT_FAILURE);
-    }
+    list->index = (ParagraphNode **)CheckedMalloc(list->count * sizeof(ParagraphNode *),
+                                                  "BuildIndex");
 
     list->capacity = list->count;
 
@@ -117,7 +128,7 @@ void BuildIndex(ParagraphList *list)
 // Retrieve a paragraph node in O(1) using the index array.
 ParagraphNode *GetParagraphByIndex(ParagraphList *list, int i)
 {
-    if (i < 0 || i >= list->count)
+    if (list == NULL || i < 0 || i >= list->count)
         return NULL;
 
     return list->index[i];
