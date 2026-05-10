@@ -2,14 +2,14 @@
 #include <stdlib.h>
 #include "../include/sentence_ll.h"
 
-
+// Main function: create an empty sentence list.
 SentenceList CreateSentenceList(void)
 {
     SentenceList list = {NULL, NULL, 0, NULL, 0};
     return list;
 }
 
-
+// Main function: append a sentence node with its BST and original text.
 void AddSentence(SentenceList *list, WordNode *bst_root, const char *original)
 {
     if (list == NULL)
@@ -42,7 +42,7 @@ void AddSentence(SentenceList *list, WordNode *bst_root, const char *original)
     list->count++;
 }
 
-
+// Main function: find a sentence by id using a linear scan.
 SentenceNode *GetSentence(SentenceList list, int id)
 {
     if (id < 0 || id >= list.count)
@@ -59,7 +59,7 @@ SentenceNode *GetSentence(SentenceList list, int id)
     return NULL;
 }
 
-
+// Main function: build an index array for O(1) sentence lookup.
 void BuildSentenceIndex(SentenceList *list)
 {
     if (list == NULL)
@@ -68,7 +68,6 @@ void BuildSentenceIndex(SentenceList *list)
         return;
     }
 
-    
     if (list->count == 0)
     {
         list->index = NULL;
@@ -89,7 +88,7 @@ void BuildSentenceIndex(SentenceList *list)
     }
 }
 
-
+// Main function: return a sentence by index from the built array.
 SentenceNode *GetSentenceByIndex(SentenceList *list, int i)
 {
     if (list == NULL || i < 0 || i >= list->count)
@@ -98,7 +97,7 @@ SentenceNode *GetSentenceByIndex(SentenceList *list, int i)
     return list->index[i];
 }
 
-
+// Main function: print all sentences and their words.
 void PrintSentences(SentenceList list)
 {
     SentenceNode *current = list.head;
@@ -111,7 +110,7 @@ void PrintSentences(SentenceList list)
     }
 }
 
-
+// Main function: free all sentence nodes, their BSTs, and the index array.
 void FreeSentenceList(SentenceList *list)
 {
     if (list == NULL)
@@ -128,7 +127,6 @@ void FreeSentenceList(SentenceList *list)
         current = temp;
     }
 
-    
     free(list->index);
 
     list->head = NULL;

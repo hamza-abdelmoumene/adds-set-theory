@@ -4,10 +4,10 @@
 #include <stdbool.h>
 #include "../include/word_bst.h"
 
-
+// Main function: find a word in the BST and return node and parent.
 void Search(const char *word, WordNode *r, WordNode **p, WordNode **q)
 {
-    
+
     if (p == NULL || q == NULL)
     {
         PrintError("Search", "output pointers must not be NULL");
@@ -41,23 +41,21 @@ void Search(const char *word, WordNode *r, WordNode **p, WordNode **q)
     *p = r;
     *q = NULL;
 
-    
     while (*p != NULL)
     {
         int cmp = strcmp(word, NodeValue(*p));
         if (cmp == 0)
-            return; 
+            return;
 
         *q = *p;
         *p = (cmp < 0) ? LC(*p) : RC(*p);
     }
-    
 }
 
-
+// Main function: insert a word into the BST, ignoring duplicates.
 bool Insert(const char *word, WordNode **r)
 {
-    
+
     if (r == NULL)
         return false;
 
@@ -79,25 +77,22 @@ bool Insert(const char *word, WordNode **r)
         return false;
     }
 
-    
     WordNode *p = NULL;
     WordNode *q = NULL;
 
     Search(word, *r, &p, &q);
     if (p != NULL)
-        return false; 
+        return false;
 
-    
     WordNode *new_node = AllocateNode();
     Ass_Node_Val(new_node, word);
 
     if (q == NULL)
     {
-        *r = new_node; 
+        *r = new_node;
         return true;
     }
 
-    
     if (strcmp(word, NodeValue(q)) < 0)
         Ass_LC(q, new_node);
     else
@@ -106,22 +101,21 @@ bool Insert(const char *word, WordNode **r)
     return true;
 }
 
-
+// Main function: print the BST in sorted order.
 void Inorder(WordNode *r)
 {
     if (r == NULL)
         return;
 
-    
     Inorder(LC(r));
     printf("%s ", NodeValue(r));
     Inorder(RC(r));
 }
 
-
+// Main function: free all nodes in a BST and reset the root.
 void FreeTree(WordNode **r)
 {
-    
+
     if (r == NULL || *r == NULL)
     {
         if (r == NULL)
@@ -129,17 +123,16 @@ void FreeTree(WordNode **r)
         return;
     }
 
-    
     FreeTree(&((*r)->left));
     FreeTree(&((*r)->right));
     FreeNode(*r);
     *r = NULL;
 }
 
-
+// Main function: copy all words from one BST into another.
 void CopyTree(WordNode *src, WordNode **dest)
 {
-    
+
     if (src == NULL)
         return;
 
@@ -149,13 +142,12 @@ void CopyTree(WordNode *src, WordNode **dest)
         return;
     }
 
-    
     Insert(NodeValue(src), dest);
     CopyTree(LC(src), dest);
     CopyTree(RC(src), dest);
 }
 
-
+// Main function: collect words into a dynamic array using in-order traversal.
 void CollectWords(WordNode *root, char ***array, size_t *size, size_t *capacity)
 {
     if (array == NULL || size == NULL || capacity == NULL)
@@ -167,10 +159,8 @@ void CollectWords(WordNode *root, char ***array, size_t *size, size_t *capacity)
     if (root == NULL)
         return;
 
-    
     CollectWords(LC(root), array, size, capacity);
 
-    
     if (*capacity == 0)
     {
         *capacity = 8;
@@ -183,20 +173,19 @@ void CollectWords(WordNode *root, char ***array, size_t *size, size_t *capacity)
         *capacity = new_cap;
     }
 
-    
     char *copy = CheckedStrDup(NodeValue(root), "CollectWords");
     (*array)[(*size)++] = copy;
 
     CollectWords(RC(root), array, size, capacity);
 }
 
-
+// Helper function: comparator for sorting words alphabetically.
 static int comp(const void *a, const void *b)
 {
     return strcmp(*(const char **)a, *(const char **)b);
 }
 
-
+// Main function: sort a word array using qsort.
 void SortWords(char **array, size_t size)
 {
     if (array == NULL || size == 0)
@@ -205,10 +194,10 @@ void SortWords(char **array, size_t size)
     qsort(array, size, sizeof(char *), comp);
 }
 
-
+// Main function: insert words median-first to build a balanced BST.
 void MedianInsert(char **array, size_t left, size_t right, WordNode **root)
 {
-    
+
     if (left > right)
         return;
 
@@ -216,7 +205,6 @@ void MedianInsert(char **array, size_t left, size_t right, WordNode **root)
 
     Insert(array[mid], root);
 
-    
     if (mid > left)
         MedianInsert(array, left, mid - 1, root);
 

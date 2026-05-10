@@ -2,14 +2,14 @@
 #include <stdlib.h>
 #include "../include/paragraph_ll.h"
 
-
+// Main function: create an empty paragraph list.
 ParagraphList CreateParagraphList(void)
 {
     ParagraphList list = {NULL, NULL, 0, NULL, 0};
     return list;
 }
 
-
+// Main function: append a paragraph node with its sentence list and original text.
 void AddParagraph(ParagraphList *list, SentenceList sentence_list, const char *original)
 {
     if (list == NULL)
@@ -39,7 +39,7 @@ void AddParagraph(ParagraphList *list, SentenceList sentence_list, const char *o
     list->count++;
 }
 
-
+// Main function: find a paragraph by id using a linear scan.
 ParagraphNode *GetParagraph(ParagraphList list, int id)
 {
     if (id < 0 || id >= list.count)
@@ -56,7 +56,7 @@ ParagraphNode *GetParagraph(ParagraphList list, int id)
     return NULL;
 }
 
-
+// Main function: print all paragraphs and their sentences.
 void PrintParagraphs(ParagraphList list)
 {
     ParagraphNode *current = list.head;
@@ -69,7 +69,7 @@ void PrintParagraphs(ParagraphList list)
     }
 }
 
-
+// Main function: free all paragraph nodes and their nested data.
 void FreeParagraphList(ParagraphList *list)
 {
     if (list == NULL)
@@ -89,14 +89,14 @@ void FreeParagraphList(ParagraphList *list)
 
     free(list->index);
 
-    list->head     = NULL;
-    list->tail     = NULL;
-    list->index    = NULL;
-    list->count    = 0;
+    list->head = NULL;
+    list->tail = NULL;
+    list->index = NULL;
+    list->count = 0;
     list->capacity = 0;
 }
 
-
+// Main function: build an index array for O(1) paragraph lookup.
 void BuildIndex(ParagraphList *list)
 {
     if (list == NULL)
@@ -107,7 +107,7 @@ void BuildIndex(ParagraphList *list)
 
     if (list->count == 0)
     {
-        list->index    = NULL;
+        list->index = NULL;
         list->capacity = 0;
         return;
     }
@@ -125,7 +125,7 @@ void BuildIndex(ParagraphList *list)
     }
 }
 
-
+// Main function: return a paragraph by index from the built array.
 ParagraphNode *GetParagraphByIndex(ParagraphList *list, int i)
 {
     if (list == NULL || i < 0 || i >= list->count)

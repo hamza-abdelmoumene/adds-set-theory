@@ -24,6 +24,7 @@
 #define RIGHT_W 48
 #define RSLOTS 24
 
+// Compute the left padding to center the UI box.
 static int BoxColumn(void)
 {
     int w, h;
@@ -32,12 +33,14 @@ static int BoxColumn(void)
     return (p < 0) ? 0 : p;
 }
 
+// Draw a single border line for the main box.
 static void DrawBorder(const char *s)
 {
     PadSpaces(BoxColumn());
     printf("%s\033[K\n", s);
 }
 
+// Draw one dual-pane row with clamped right content.
 static void DrawRow(const char *lc, const char *l, const char *r)
 {
 
@@ -65,6 +68,7 @@ static void DrawRow(const char *lc, const char *l, const char *r)
     printf(C7 "║" RST "\033[K\n");
 }
 
+// Draw one full-width row with clamped content.
 static void DrawFullRow(const char *content)
 {
     enum
@@ -83,6 +87,7 @@ static void DrawFullRow(const char *content)
     printf(C7 "║" RST "\033[K\n");
 }
 
+// Draw a full-width box for previews/results.
 static void DrawFullBox(const char *slots[RSLOTS])
 {
     PadSpaces(BoxColumn());
@@ -101,6 +106,7 @@ static void DrawFullBox(const char *slots[RSLOTS])
     printf("╝" RST "\033[K\n");
 }
 
+// Animate the bottom separator bar.
 static void DrawSeparator(void)
 {
     int tw, th;
@@ -132,6 +138,7 @@ static void DrawSeparator(void)
     }
 }
 
+// Render the gradient footer text.
 static void DrawFooter(void)
 {
     int tw, th;
@@ -158,6 +165,7 @@ static void DrawFooter(void)
     FlushOutput();
 }
 
+// Draw separator and footer together.
 static void DrawStatusBar(void)
 {
     DrawSeparator();
@@ -166,6 +174,7 @@ static void DrawStatusBar(void)
 
 static void DrawBreadcrumb(const char *crumb);
 
+// Show the shortcuts help panel.
 static void ShowShortcutsPopup(void)
 {
     const char *rs[RSLOTS];
@@ -189,6 +198,7 @@ static void ShowShortcutsPopup(void)
     ReadChar();
 }
 
+// Print the breadcrumb label at the top.
 static void DrawBreadcrumb(const char *crumb)
 {
     MoveCursor(0, 0);
@@ -198,6 +208,7 @@ static void DrawBreadcrumb(const char *crumb)
     FlushOutput();
 }
 
+// Read a key and map it to a navigation code.
 static int ReadKey(void)
 {
     int c = ReadChar();
@@ -270,6 +281,7 @@ static const char *TP_COL[] = {C9 BLD, C10 BLD, C11 BLD, C12 BLD, C12 BLD, WHT B
 static const char *BADGE[] = {C6, C7, C8, C9, C10, C11, C12, WHT};
 #define BADGE_N 8
 
+// Draw the dual-pane box with ASCII art and slots.
 static void DrawBox(const char *rslots[RSLOTS])
 {
 
@@ -317,6 +329,7 @@ static void DrawBox(const char *rslots[RSLOTS])
                "╝" RST);
 }
 
+// Format one menu option with selection styling.
 static void FormatOption(char *buf, int bufsz, int idx, const char *label, int selected)
 {
     const char *bc = BADGE[idx < BADGE_N ? idx : BADGE_N - 1];
@@ -330,6 +343,7 @@ static void FormatOption(char *buf, int bufsz, int idx, const char *label, int s
                  bc, idx + 1, label);
 }
 
+// Render a menu and return the selected index.
 static int GenericMenu(const char *title,
                        const char **opts, int n,
                        const char *crumb)
@@ -423,6 +437,7 @@ static int GenericMenu(const char *title,
     }
 }
 
+// Type a centered line with a small delay per character.
 static void TypeAt(int r, const char *color, const char *text, int delay)
 {
     int tw, th;
@@ -457,6 +472,7 @@ static void TypeAt(int r, const char *color, const char *text, int delay)
     FlushOutput();
 }
 
+// Print a centered line without typing effect.
 static void CenterPrint(int r, const char *color, const char *text)
 {
     int tw, th;
@@ -485,6 +501,7 @@ static const RGB L_BLACK = {0, 0, 0};
 static const RGB L_BLUE = {30, 105, 180};
 static int g_pad = 0;
 
+// Reset the logo canvas to a blank background.
 static void ClearCanvas(void)
 {
     for (int y = 0; y < CH; y++)
@@ -492,6 +509,7 @@ static void ClearCanvas(void)
             canvas[y][x] = L_WHITE;
 }
 
+// Fill a rectangle on the logo canvas.
 static void FillRect(int x0, int y0, int w, int h, RGB c)
 {
     for (int y = y0; y < y0 + h && y < CH; y++)
@@ -503,6 +521,7 @@ static void FillRect(int x0, int y0, int w, int h, RGB c)
 #define LT 9
 #define LB 35
 
+// Draw the E letter on the logo canvas.
 static void DrawE(void)
 {
     int x = 10, w = 20, mid = (LT + LB) / 2 - LS / 2;
@@ -513,6 +532,7 @@ static void DrawE(void)
     FillRect(x, LB - LS, w, LS, L_BLACK);
 }
 
+// Draw the S letter on the logo canvas.
 static void DrawS(void)
 {
     int x = 34, w = 20, mid = (LT + LB) / 2 - LS / 2;
@@ -523,6 +543,7 @@ static void DrawS(void)
     FillRect(x, LB - LS, w, LS, L_BLACK);
 }
 
+// Draw the I letter on the logo canvas.
 static void DrawI(void)
 {
     FillRect(61, LT, 6, LB - LT, L_BLACK);
@@ -530,10 +551,13 @@ static void DrawI(void)
     FillRect(58, LB - LS, 12, LS, L_BLACK);
 }
 
+// Draw the accent dot on the logo canvas.
 static void DrawDot(void) { FillRect(60, 3, 8, 5, L_BLUE); }
 
+// Compare two RGB values.
 static int RgbEquals(RGB a, RGB b) { return a.r == b.r && a.g == b.g && a.b == b.b; }
 
+// Render the logo canvas using ANSI blocks.
 static void RenderLogo(void)
 {
     for (int y = 0; y < CH; y += 2)
@@ -554,6 +578,7 @@ static void RenderLogo(void)
     }
 }
 
+// Small delay used during logo animation.
 static void LogoSleep(int ms)
 {
 #ifdef _WIN32
@@ -566,6 +591,7 @@ static void LogoSleep(int ms)
 #endif
 }
 
+// Type a centered line with a light typewriter effect.
 static void TypewriteCentered(const char *t, int tw)
 {
     int p = (tw - (int)strlen(t)) / 2;
@@ -582,6 +608,7 @@ static void TypewriteCentered(const char *t, int tw)
     printf("\033[0m\033[K\n");
 }
 
+// Type two labels with spacing between them.
 static void TypewriteLeftRight(const char *l, const char *r, int tw)
 {
     int ll = (int)strlen(l), rl = (int)strlen(r), sp = tw - 2 * g_pad - ll - rl;
@@ -610,6 +637,7 @@ static void TypewriteLeftRight(const char *l, const char *r, int tw)
     printf("\033[0m\033[K\n");
 }
 
+// Print a separator line under the logo.
 static void PrintSeparatorLine(int tw)
 {
     PadSpaces(g_pad);
@@ -620,6 +648,7 @@ static void PrintSeparatorLine(int tw)
     fflush(stdout);
 }
 
+// Show the ESI logo splash screen.
 static void ShowEsiLogo(void)
 {
     int tw, th;
@@ -661,6 +690,7 @@ static void ShowEsiLogo(void)
     ReadChar();
 }
 
+// Ask the user to switch to fullscreen for best layout.
 static void ShowFullscreenNotice(void)
 {
     int tw, th;
@@ -688,6 +718,7 @@ static void ShowFullscreenNotice(void)
     ClearScreen();
 }
 
+// Show the TP banner animation.
 static void ShowTp1(void)
 {
     int tw, th;
@@ -709,6 +740,7 @@ static void ShowTp1(void)
     SleepMillis(1000);
 }
 
+// Show the accomplishment banner.
 static void ShowAccomplished(void)
 {
     int tw, th;
@@ -725,6 +757,7 @@ static void ShowAccomplished(void)
     SleepMillis(600);
 }
 
+// Show the author names with a color sweep.
 static void ShowNames(void)
 {
     int tw, th;
@@ -750,6 +783,7 @@ static void ShowNames(void)
     SleepMillis(500);
 }
 
+// Animate the divider line under the intro.
 static void ShowSeparatorAnimation(void)
 {
     int tw, th;
@@ -782,6 +816,7 @@ static void ShowSeparatorAnimation(void)
     }
 }
 
+// Run the full intro animation sequence.
 void RunAnimation(void)
 {
     InitTerminal();
@@ -811,6 +846,7 @@ void RunAnimation(void)
     FlushOutput();
 }
 
+// Show a short success notification.
 static void NotifyOk(const char *msg)
 {
     int tw, th;
@@ -825,6 +861,7 @@ static void NotifyOk(const char *msg)
     SleepMillis(900);
 }
 
+// Show a short error notification.
 static void NotifyError(const char *msg)
 {
     int tw, th;
@@ -839,6 +876,7 @@ static void NotifyError(const char *msg)
     SleepMillis(1200);
 }
 
+// Main menu for top-level actions.
 int MenuMain(void)
 {
     static const char *opts[] = {
@@ -851,6 +889,7 @@ int MenuMain(void)
     return GenericMenu("MAIN MENU", opts, 4, "ADDS  ›  Set Theory");
 }
 
+// Menu for choosing the set operation level.
 int MenuLevel(void)
 {
     static const char *opts[] = {
@@ -862,6 +901,7 @@ int MenuLevel(void)
                        "Main Menu  ›  Set Operations  ›  Level");
 }
 
+// Menu for choosing union/intersection/difference.
 int MenuOperation(void)
 {
     static const char *names[] = {
@@ -939,6 +979,7 @@ int MenuOperation(void)
     }
 }
 
+// Menu for choosing a loaded file.
 int MenuPickFile(const char **files, int n, const char *crumb)
 {
     if (n == 0)
@@ -949,6 +990,7 @@ int MenuPickFile(const char **files, int n, const char *crumb)
     return GenericMenu("SELECT FILE", files, n, crumb);
 }
 
+// Menu for choosing a paragraph from a file.
 int MenuPickParagraph(const char **labels, int n, const char *crumb)
 {
     if (n == 0)
@@ -959,6 +1001,7 @@ int MenuPickParagraph(const char **labels, int n, const char *crumb)
     return GenericMenu("SELECT PARAGRAPH", labels, n, crumb);
 }
 
+// Menu for choosing a sentence from a paragraph.
 int MenuPickSentence(const char **labels, int n, const char *crumb)
 {
     if (n == 0)
@@ -969,6 +1012,7 @@ int MenuPickSentence(const char **labels, int n, const char *crumb)
     return GenericMenu("SELECT SENTENCE", labels, n, crumb);
 }
 
+// Draw the load-file screen with the current input.
 static void DrawLoadFileScreen(const char *typed)
 {
     const char *rs[RSLOTS];
@@ -1000,6 +1044,7 @@ static void DrawLoadFileScreen(const char *typed)
     FlushOutput();
 }
 
+// Read a file path from the user.
 int ScreenLoadFile(char *buf, int buf_size)
 {
     int pos = 0;
@@ -1060,6 +1105,7 @@ int ScreenLoadFile(char *buf, int buf_size)
     return pos > 0;
 }
 
+// Build a short preview line from a paragraph.
 static void BuildParagraphPreview(const char *text, char *out, int outsz, int limit)
 {
     (void)limit; /* now word-count based, limit param kept for signature compat */
@@ -1120,12 +1166,15 @@ static void BuildParagraphPreview(const char *text, char *out, int outsz, int li
     {
         /* check there's actually more non-space content after what we captured */
         int i = 0;
-        while (text[i] && isspace((unsigned char)text[i])) i++;
+        while (text[i] && isspace((unsigned char)text[i]))
+            i++;
         int w = 0;
         while (text[i])
         {
-            if (!isspace((unsigned char)text[i])) {
-                if (i == 0 || isspace((unsigned char)text[i-1])) w++;
+            if (!isspace((unsigned char)text[i]))
+            {
+                if (i == 0 || isspace((unsigned char)text[i - 1]))
+                    w++;
             }
             i++;
         }
@@ -1134,6 +1183,7 @@ static void BuildParagraphPreview(const char *text, char *out, int outsz, int li
     }
 }
 
+// Show paged paragraph previews for one file.
 static void ScreenShowFilePreview(FileNode *fn)
 {
     int page = 0;
@@ -1207,6 +1257,7 @@ static void ScreenShowFilePreview(FileNode *fn)
     }
 }
 
+// Let the user select a file and open its preview.
 static void ScreenExploreLoadedFiles(FileList *list)
 {
     static char labels[8][180];
@@ -1255,6 +1306,7 @@ static void ScreenExploreLoadedFiles(FileList *list)
     }
 }
 
+// Wrap text into fixed-width lines for the result screen.
 static int WrapPlainText(const char *text, char lines[][512], int max_lines, int width)
 {
     const char *p = text;
@@ -1311,6 +1363,7 @@ static int WrapPlainText(const char *text, char lines[][512], int max_lines, int
     return count > 0 ? count : 1;
 }
 
+// Show the result screen with metadata and wrapped output.
 void ScreenShowResult(const char *op_name, const char *a_label,
                       const char *b_label, const char *result_line,
                       size_t cardinality, int a_subset_b, int b_subset_a)
@@ -1362,6 +1415,7 @@ void ScreenShowResult(const char *op_name, const char *a_label,
     }
 }
 
+// Show an animated loading bar during long operations.
 static void ShowLoadingBar(const char *label, int duration_ms)
 {
     int tw, th;
@@ -1460,6 +1514,7 @@ static void ShowLoadingBar(const char *label, int duration_ms)
     SleepMillis(200);
 }
 
+// Append BST words into a display buffer with separators.
 static void InorderToPrettyBuffer(WordNode *r, char *buf, int bufsz, int *pos, int *first)
 {
     if (!r || *pos >= bufsz - 1)
@@ -1478,6 +1533,7 @@ static void InorderToPrettyBuffer(WordNode *r, char *buf, int bufsz, int *pos, i
     InorderToPrettyBuffer(r->right, buf, bufsz, pos, first);
 }
 
+// Convert a word BST into a string for display.
 static void BstToString(WordNode *r, char *buf, int bufsz)
 {
     int pos = 0, first = 1;
@@ -1492,6 +1548,7 @@ static void BstToString(WordNode *r, char *buf, int bufsz)
     snprintf(buf + pos, bufsz - pos, " }");
 }
 
+// Convert a sentence list into a compact string.
 static void SentenceListToString(SentenceList list, char *buf, int bufsz)
 {
     int pos = 0;
@@ -1512,6 +1569,7 @@ static void SentenceListToString(SentenceList list, char *buf, int bufsz)
     }
 }
 
+// Convert a paragraph list into a compact string.
 static void ParagraphListToString(ParagraphList list, char *buf, int bufsz)
 {
     int pos = 0;
@@ -1532,6 +1590,7 @@ static void ParagraphListToString(ParagraphList list, char *buf, int bufsz)
     }
 }
 
+// Build label strings for paragraph selection.
 static int BuildParagraphLabels(ParagraphList *pl, char labels[][80], const char **ptrs, int max)
 {
     int n = pl->count < max ? pl->count : max;
@@ -1544,6 +1603,7 @@ static int BuildParagraphLabels(ParagraphList *pl, char labels[][80], const char
     return n;
 }
 
+// Format the result data and open the result screen.
 static void ScreenShowFullResult(const char *op_name, const char *a_label,
                                  const char *b_label, const char *level_name,
                                  WordNode *word_result, SentenceList *sent_result,
@@ -1566,11 +1626,13 @@ static void ScreenShowFullResult(const char *op_name, const char *a_label,
 
 static const char *OP_NAMES[] = {"UNION", "INTERSECTION", "DIFFERENCE"};
 
+// Validate a user-entered file path.
 static int IsReadableFile(const char *filename)
 {
     return IsReadableRegularFile(filename);
 }
 
+// Main interactive loop for the application.
 void RunMenu(void)
 {
     printf(HCUR);
@@ -1587,27 +1649,27 @@ void RunMenu(void)
         switch (choice)
         {
 
-            case 0:
+        case 0:
+        {
+            for (;;)
             {
-                for (;;)
+                char filename[512];
+                int got = ScreenLoadFile(filename, sizeof(filename));
+                if (!got)
+                    break;
+                if (!IsReadableFile(filename))
                 {
-                    char filename[512];
-                    int got = ScreenLoadFile(filename, sizeof(filename));
-                    if (!got)
-                        break;
-                    if (!IsReadableFile(filename))
-                    {
-                        NotifyError("Invalid path — file could not be opened.");
-                        continue;
-                    }
-                    ShowLoadingBar("Parsing file...", 600);
-                    if (AddFile(&file_list, filename))
-                        NotifyOk("File loaded successfully.");
-                    else
-                        NotifyError("Invalid path — file could not be opened.");
+                    NotifyError("Invalid path — file could not be opened.");
+                    continue;
                 }
-                break;
+                ShowLoadingBar("Parsing file...", 600);
+                if (AddFile(&file_list, filename))
+                    NotifyOk("File loaded successfully.");
+                else
+                    NotifyError("Invalid path — file could not be opened.");
             }
+            break;
+        }
 
         case 1:
         {

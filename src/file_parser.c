@@ -5,12 +5,13 @@
 #include "../include/file_parser.h"
 #include "../include/utils.h"
 
-
+// Helper function: wrapper around CheckedStrDup for local use.
 static char *StrDup(const char *s)
 {
     return CheckedStrDup(s, "StrDup");
 }
 
+// Helper function: finalize the current word and add it to the word list.
 static void FlushWord(ParserState *s)
 {
     if (s->word_len == 0)
@@ -35,7 +36,7 @@ static void FlushWord(ParserState *s)
     s->words[s->word_count++] = StrDup(s->word);
 }
 
-
+// Helper function: build a sentence BST from collected words and reset buffers.
 static void FlushSentence(ParserState *s)
 {
     if (s->word_count == 0)
@@ -60,7 +61,7 @@ static void FlushSentence(ParserState *s)
     s->sentence_buf[0] = '\0';
 }
 
-
+// Helper function: build a paragraph node from collected sentences and reset buffers.
 static void FlushParagraph(ParserState *s, ParagraphList *result)
 {
     if (s->current_sentences.count == 0)
@@ -74,6 +75,7 @@ static void FlushParagraph(ParserState *s, ParagraphList *result)
     s->paragraph_buf[0] = '\0';
 }
 
+// Main function: parse a text file into a ParagraphList structure.
 ParagraphList ParseFile(const char *filename)
 {
     ParagraphList result = CreateParagraphList();
@@ -105,18 +107,18 @@ ParagraphList ParseFile(const char *filename)
     int c;
     while ((c = fgetc(file)) != EOF)
     {
-        if (c == ' ' || c == '\t') 
+        if (c == ' ' || c == '\t')
         {
             FlushWord(&s);
             if (s.sentence_len < (int)sizeof(s.sentence_buf) - 1)
                 s.sentence_buf[s.sentence_len++] = ' ';
         }
-        else if (c == '.') 
+        else if (c == '.')
         {
             FlushWord(&s);
             FlushSentence(&s);
         }
-        else if (c == '\n') 
+        else if (c == '\n')
         {
             FlushWord(&s);
             FlushSentence(&s);
@@ -130,10 +132,9 @@ ParagraphList ParseFile(const char *filename)
                 s.sentence_buf[s.sentence_len++] = (char)c;
         }
 
-        
         if (s.paragraph_len < (int)sizeof(s.paragraph_buf) - 1)
         {
-            
+            // Skip leading whitespace when starting a new paragraph.
             if (s.paragraph_len > 0 || !isspace(c))
                 s.paragraph_buf[s.paragraph_len++] = (char)c;
         }
