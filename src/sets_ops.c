@@ -4,14 +4,12 @@
 #include <stdio.h>
 #include "../include/sets_ops.h"
 
-/* ═════════════════════════════════════════════════════════════════════════════
- *  Internal Helpers
- * ═════════════════════════════════════════════════════════════════════════════ */
+ // Internal Helpers
+ 
 
-/**
- * Compare two BSTs by their sorted word content.
- * Two BSTs are "equal" iff they contain the exact same set of words.
- */
+
+//Compare two BSTs by their sorted word content.
+
 static bool BSTsEqual(WordNode *A, WordNode *B)
 {
     char **wA = NULL, **wB = NULL;
@@ -41,10 +39,7 @@ static bool BSTsEqual(WordNode *A, WordNode *B)
     return eq;
 }
 
-/**
- * Check if a sentence (identified by its word BST) has an equivalent
- * in the given SentenceList.
- */
+ // Check if a sentence (identified by its word BST) has an equivalent in the given SentenceList.
 static bool SentenceExistsIn(WordNode *bst, SentenceList list)
 {
     SentenceNode *cur = list.head;
@@ -57,9 +52,9 @@ static bool SentenceExistsIn(WordNode *bst, SentenceList list)
     return false;
 }
 
-/**
- * Deep-copy an entire SentenceList (every BST is duplicated via CopyTree).
- */
+
+ // Deep-copy an entire SentenceList (every BST is duplicated via CopyTree).
+ 
 static SentenceList CopySentenceList(SentenceList src)
 {
     SentenceList r = CreateSentenceList();
@@ -74,10 +69,7 @@ static SentenceList CopySentenceList(SentenceList src)
     return r;
 }
 
-/**
- * Check if two SentenceLists represent the same set of sentences.
- * Same count + every sentence in A exists in B → equal.
- */
+//Check if two SentenceLists represent the same set of sentences.
 static bool SentenceListsEqual(SentenceList A, SentenceList B)
 {
     if (A.count != B.count)
@@ -93,10 +85,7 @@ static bool SentenceListsEqual(SentenceList A, SentenceList B)
     return true;
 }
 
-/**
- * Check if a paragraph (identified by its SentenceList) has an equivalent
- * in the given ParagraphList.
- */
+//Check if a paragraph (identified by its SentenceList) has an equivalent in the given ParagraphList.
 static bool ParagraphExistsIn(SentenceList sentences, ParagraphList list)
 {
     ParagraphNode *cur = list.head;
@@ -109,11 +98,11 @@ static bool ParagraphExistsIn(SentenceList sentences, ParagraphList list)
     return false;
 }
 
-/* ═════════════════════════════════════════════════════════════════════════════
- *  Word Level Set Operations  (BST × BST → BST)
- * ═════════════════════════════════════════════════════════════════════════════ */
 
-// Union: all unique words from A or B.
+ //  Word Level Set Operations  
+ 
+
+// Union
 WordNode *WordUnion(WordNode *A, WordNode *B)
 {
     WordNode *result = NULL;
@@ -122,7 +111,7 @@ WordNode *WordUnion(WordNode *A, WordNode *B)
     return result;
 }
 
-// Intersection: words present in both A and B.
+// Intersection
 WordNode *WordIntersection(WordNode *A, WordNode *B)
 {
     // Collect words from A (in-order → already sorted)
@@ -152,7 +141,7 @@ WordNode *WordIntersection(WordNode *A, WordNode *B)
     return result;
 }
 
-// Difference: words in A that are NOT in B.
+// Difference:
 WordNode *WordDifference(WordNode *A, WordNode *B)
 {
     // Collect words from A (in-order → already sorted)
@@ -182,11 +171,11 @@ WordNode *WordDifference(WordNode *A, WordNode *B)
     return result;
 }
 
-/* ═════════════════════════════════════════════════════════════════════════════
- *  Sentence Level Set Operations  (SentenceList × SentenceList → SentenceList)
- * ═════════════════════════════════════════════════════════════════════════════ */
 
-// Union: all unique sentences from A or B.
+ // Sentence Level Set Operations  
+ 
+
+// Union
 SentenceList SentenceUnion(SentenceList A, SentenceList B)
 {
     // Start with a deep copy of all sentences in A
@@ -208,7 +197,7 @@ SentenceList SentenceUnion(SentenceList A, SentenceList B)
     return result;
 }
 
-// Intersection: sentences whose word-set appears in both A and B.
+// Intersection
 SentenceList SentenceIntersection(SentenceList A, SentenceList B)
 {
     SentenceList result = CreateSentenceList();
@@ -228,7 +217,7 @@ SentenceList SentenceIntersection(SentenceList A, SentenceList B)
     return result;
 }
 
-// Difference: sentences in A whose word-set does not appear in B.
+// Difference
 SentenceList SentenceDifference(SentenceList A, SentenceList B)
 {
     SentenceList result = CreateSentenceList();
@@ -248,11 +237,11 @@ SentenceList SentenceDifference(SentenceList A, SentenceList B)
     return result;
 }
 
-/* ═════════════════════════════════════════════════════════════════════════════
- *  Paragraph Level Set Operations  (ParagraphList × ParagraphList → ParagraphList)
- * ═════════════════════════════════════════════════════════════════════════════ */
 
-// Union: all unique paragraphs from A or B.
+ // Paragraph Level Set Operations 
+ 
+
+// Union
 ParagraphList ParagraphUnion(ParagraphList A, ParagraphList B)
 {
     ParagraphList result = CreateParagraphList();
@@ -281,7 +270,7 @@ ParagraphList ParagraphUnion(ParagraphList A, ParagraphList B)
     return result;
 }
 
-// Intersection: paragraphs whose sentence-set appears in both A and B.
+// Intersection
 ParagraphList ParagraphIntersection(ParagraphList A, ParagraphList B)
 {
     ParagraphList result = CreateParagraphList();
@@ -300,7 +289,7 @@ ParagraphList ParagraphIntersection(ParagraphList A, ParagraphList B)
     return result;
 }
 
-// Difference: paragraphs in A whose sentence-set does not appear in B.
+// Difference
 ParagraphList ParagraphDifference(ParagraphList A, ParagraphList B)
 {
     ParagraphList result = CreateParagraphList();

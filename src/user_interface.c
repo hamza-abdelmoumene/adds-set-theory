@@ -14,6 +14,8 @@
 #include <ctype.h>
 #include <math.h>
 #include <stdint.h>
+#include "../include/file_list.h"
+#include "../include/sets_ops.h"
 #include "../include/utils.h"
 #include "../include/file_list.h"
 #include "../include/word_bst.h"
@@ -725,7 +727,7 @@ static void ShowFullscreenNotice(void)
     int m = th / 2 - 4;
     CenterPrint(m,     C8 BLD, "┌────────────────────────────────────────────────────┐");
     CenterPrint(m + 1, C8 BLD, "│                                                    │");
-    CenterPrint(m + 2, C7 BLD, "│     ⚠  PLEASE PUT YOUR TERMINAL IN FULLSCREEN  ⚠   │");
+    CenterPrint(m + 2, C7 BLD, "│     ⚠  PLEASE PUT YOUR TERMINAL IN FULLSCREEN  ⚠  │");
     CenterPrint(m + 3, C8 BLD, "│                                                    │");
     CenterPrint(m + 4, C9,     "│           Minimum recommended: 120 x 35            │");
     CenterPrint(m + 5, C8 BLD, "│                                                    │");
@@ -1104,98 +1106,330 @@ void ScreenShowResult(const char *op_name, const char *a_label,
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
+ *  HELPERS: collect BST words into a single display string
+ * ───────────────────────────────────────────────────────────────────────────── */
+static void InorderToBuffer(WordNode *r, char *buf, int bufsz, int *pos)
+{
+    if (!r) return;
+    InorderToBuffer(r->left, buf, bufsz, pos);
+    int n = snprintf(buf + *pos, bufsz - *pos, "%s ", r->val);
+    if (n > 0) *pos += n;
+    InorderToBuffer(r->right, buf, bufsz, pos);
+}
+
+static void BstToString(WordNode *r, char *buf, int bufsz)
+{
+    int pos = 0;
+    buf[0] = '\0';
+    InorderToBuffer(r, buf, bufsz, &pos);
+}
+
+/* Build a display string for a SentenceList result */
+static void SentenceListToString(SentenceList list, char *buf, int bufsz)
+{
+    int pos = 0;
+    buf[0] = '\0';
+    SentenceNode *cur = list.head;
+    while (cur && pos < bufsz - 2)
+    {
+        int n = snprintf(buf + pos, bufsz - pos, "S%d{", cur->id);
+        if (n > 0) pos += n;
+        InorderToBuffer(cur->val, buf, bufsz, &pos);
+        n = snprintf(buf + pos, bufsz - pos, "} ");
+        if (n > 0) pos += n;
+        cur = Next(cur);
+    }
+}
+
+/* Build a display string for a ParagraphList result */
+static void ParagraphListToString(ParagraphList list, char *buf, int bufsz)
+{
+    int pos = 0;
+    buf[0] = '\0';
+    ParagraphNode *cur = list.head;
+    while (cur && pos < bufsz - 2)
+    {
+        int n = snprintf(buf + pos, bufsz - pos, "P%d[", cur->id);
+        if (n > 0) pos += n;
+        SentenceNode *s = cur->val.head;
+        while (s && pos < bufsz - 2)
+        {
+            n = snprintf(buf + pos, bufsz - pos, "{");
+            if (n > 0) pos += n;
+            InorderToBuffer(s->val, buf, bufsz, &pos);
+            n = snprintf(buf + pos, bufsz - pos, "}");
+            if (n > 0) pos += n;
+            s = Next(s);
+        }
+        n = snprintf(buf + pos, bufsz - pos, "] ");
+        if (n > 0) pos += n;
+        cur = Next(cur);
+    }
+}
+
+/* Build label arrays for paragraphs in a file */
+static int BuildParagraphLabels(ParagraphList *pl, char labels[][80], const char **ptrs, int max)
+{
+    int n = pl->count < max ? pl->count : max;
+    for (int i = 0; i < n; i++)
+    {
+        ParagraphNode *p = GetParagraphByIndex(pl, i);
+        snprintf(labels[i], 80, "Paragraph %d  (%d sentence%s)", i, p->val.count, p->val.count == 1 ? "" : "s");
+        ptrs[i] = labels[i];
+    }
+    return n;
+}
+
+/* Build label arrays for sentences in a paragraph */
+static int BuildSentenceLabels(SentenceList *sl, char labels[][80], const char **ptrs, int max)
+{
+    int n = sl->count < max ? sl->count : max;
+    for (int i = 0; i < n; i++)
+    {
+        char wbuf[60];
+        SentenceNode *s = GetSentenceByIndex(sl, i);
+        BstToString(s->val, wbuf, sizeof(wbuf));
+        snprintf(labels[i], 80, "S%d: %.50s", i, wbuf);
+        ptrs[i] = labels[i];
+    }
+    return n;
+}
+
+/* Display file structure in a scrollable-ish result screen */
+static void ScreenDisplayStructure(FileNode *fn)
+{
+    char rbuf[2048];
+    int pos = 0;
+    rbuf[0] = '\0';
+    ParagraphNode *p = fn->val.head;
+    while (p)
+    {
+        int n = snprintf(rbuf + pos, sizeof(rbuf) - pos, "P%d: ", p->id);
+        if (n > 0) pos += n;
+        SentenceNode *s = p->val.head;
+        while (s)
+        {
+            n = snprintf(rbuf + pos, sizeof(rbuf) - pos, "[S%d: ", s->id);
+            if (n > 0) pos += n;
+            InorderToBuffer(s->val, rbuf, sizeof(rbuf), &pos);
+            n = snprintf(rbuf + pos, sizeof(rbuf) - pos, "] ");
+            if (n > 0) pos += n;
+            s = Next(s);
+        }
+        n = snprintf(rbuf + pos, sizeof(rbuf) - pos, " | ");
+        if (n > 0) pos += n;
+        p = Next(p);
+    }
+    ScreenShowResult("STRUCTURE", fn->filename, "(tree view)", rbuf);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ *  FULL-PAGE RESULT with scrollable output to stdout
+ * ───────────────────────────────────────────────────────────────────────────── */
+static void ScreenShowFullResult(const char *op_name, const char *a_label,
+                                  const char *b_label, const char *level_name,
+                                  WordNode *word_result, SentenceList *sent_result,
+                                  ParagraphList *para_result)
+{
+    char rbuf[4096];
+    rbuf[0] = '\0';
+    if (word_result)
+        BstToString(word_result, rbuf, sizeof(rbuf));
+    else if (sent_result)
+        SentenceListToString(*sent_result, rbuf, sizeof(rbuf));
+    else if (para_result)
+        ParagraphListToString(*para_result, rbuf, sizeof(rbuf));
+
+    char title[128];
+    snprintf(title, sizeof(title), "%s  %s", level_name, op_name);
+    ScreenShowResult(title, a_label, b_label, rbuf);
+}
+
+static const char *OP_NAMES[] = {"UNION", "INTERSECTION", "DIFFERENCE"};
+
+/* ─────────────────────────────────────────────────────────────────────────────
  *  MAIN LOOP
  * ───────────────────────────────────────────────────────────────────────────── */
-/* Run the main UI loop and dispatch menu selections. */
-
-
 void RunMenu(void)
 {
     printf(HCUR);
     FlushOutput();
 
+    FileList file_list = CreateFileList();
+
     for (;;)
     {
         int choice = MenuMain();
         if (choice == -1)
-            choice = 4; /* ESC on main Menu → Exit */
+            choice = 4;
 
         switch (choice)
         {
 
         case 0:
-        { /* Load File */
+        { /* ── Load File ── */
             char filename[512];
             int got = ScreenLoadFile(filename, sizeof(filename));
             if (!got)
                 break;
-            
-            
-                
-                NotifyOk("File loaded successfully.");
+            AddFile(&file_list, filename);
+            NotifyOk("File loaded successfully.");
             break;
         }
 
         case 1:
-        { /* List Loaded Files */
-            /* TODO: build files[] and para_cnt[] from FileList */
-            
-            const char *files[] = {"(no files loaded)"};
-            int para[] = {0};
-            int n = 0;
-            ScreenListFiles(files, para, n);
+        { /* ── List Loaded Files ── */
+            const char *fnames[8];
+            int pcounts[8];
+            int n = file_list.count < 8 ? file_list.count : 8;
+            for (int i = 0; i < n; i++)
+            {
+                FileNode *fn = GetFileByIndex(&file_list, i);
+                fnames[i] = fn->filename;
+                pcounts[i] = fn->val.count;
+            }
+            ScreenListFiles(fnames, pcounts, n);
             break;
         }
 
         case 2:
-        { /* Display Structure */
-            /* TODO: pick file → call PrintParagraphs           */
-            NotifyError("TODO: Display Structure not yet connected.");
+        { /* ── Display Structure ── */
+            if (file_list.count == 0)
+            {
+                NotifyError("No files loaded — please load a file first.");
+                break;
+            }
+            const char *fnames[8];
+            int n = file_list.count < 8 ? file_list.count : 8;
+            for (int i = 0; i < n; i++)
+                fnames[i] = GetFileByIndex(&file_list, i)->filename;
+            int fi = MenuPickFile(fnames, n, "Main Menu  ›  Display Structure  ›  File");
+            if (fi < 0) break;
+            ScreenDisplayStructure(GetFileByIndex(&file_list, fi));
             break;
         }
 
         case 3:
-        { /* Set Operations */
-            int level = MenuLevel();
-            if (level == -1)
-                break;
-            int op = MenuOperation();
-            if (op == -1)
-                break;
-
-            switch (level)
+        { /* ── Set Operations ── */
+            if (file_list.count == 0)
             {
-            case 0:
-                /* TODO: pick file A → paragraph A → sentence A */
-                /* TODO: pick file B → paragraph B → sentence B */
-                /* TODO: WordUnion / Intersection / Difference   */
-                /* TODO: ScreenShowResult(...)                    */
-                (void)op;
-                NotifyError("TODO: Word-level not yet connected.");
+                NotifyError("No files loaded — please load a file first.");
                 break;
-            case 1:
-                /* TODO: pick file A → paragraph A               */
-                /* TODO: pick file B → paragraph B               */
-                /* TODO: SentenceUnion / Intersection / Difference */
-                (void)op;
-                NotifyError("TODO: Sentence-level not yet connected.");
-                break;
-            case 2:
-                /* TODO: pick file A                             */
-                /* TODO: pick file B                             */
-                /* TODO: ParagraphUnion / Intersection / Difference */
-                (void)op;
-                NotifyError("TODO: Paragraph-level not yet connected.");
-                break;
-            default:
-                break;
+            }
+            int level = MenuLevel();
+            if (level == -1) break;
+            int op = MenuOperation();
+            if (op == -1) break;
+
+            /* Build file name array for pickers */
+            const char *fnames[8];
+            int fn_count = file_list.count < 8 ? file_list.count : 8;
+            for (int i = 0; i < fn_count; i++)
+                fnames[i] = GetFileByIndex(&file_list, i)->filename;
+
+            if (level == 0)
+            { /* ── Word Level ── */
+                /* Pick file A → paragraph A → sentence A */
+                int fa = MenuPickFile(fnames, fn_count, "Set Ops  ›  Word  ›  File A");
+                if (fa < 0) break;
+                FileNode *fnA = GetFileByIndex(&file_list, fa);
+                char plA[9][80]; const char *ppA[9];
+                int npA = BuildParagraphLabels(&fnA->val, plA, ppA, 9);
+                int pa = MenuPickParagraph(ppA, npA, "Set Ops  ›  Word  ›  Para A");
+                if (pa < 0) break;
+                ParagraphNode *parA = GetParagraphByIndex(&fnA->val, pa);
+                char slA[9][80]; const char *spA[9];
+                int nsA = BuildSentenceLabels(&parA->val, slA, spA, 9);
+                int sa = MenuPickSentence(spA, nsA, "Set Ops  ›  Word  ›  Sent A");
+                if (sa < 0) break;
+                SentenceNode *sentA = GetSentenceByIndex(&parA->val, sa);
+
+                /* Pick file B → paragraph B → sentence B */
+                int fb = MenuPickFile(fnames, fn_count, "Set Ops  ›  Word  ›  File B");
+                if (fb < 0) break;
+                FileNode *fnB = GetFileByIndex(&file_list, fb);
+                char plB[9][80]; const char *ppB[9];
+                int npB = BuildParagraphLabels(&fnB->val, plB, ppB, 9);
+                int pb = MenuPickParagraph(ppB, npB, "Set Ops  ›  Word  ›  Para B");
+                if (pb < 0) break;
+                ParagraphNode *parB = GetParagraphByIndex(&fnB->val, pb);
+                char slB[9][80]; const char *spB[9];
+                int nsB = BuildSentenceLabels(&parB->val, slB, spB, 9);
+                int sb = MenuPickSentence(spB, nsB, "Set Ops  ›  Word  ›  Sent B");
+                if (sb < 0) break;
+                SentenceNode *sentB = GetSentenceByIndex(&parB->val, sb);
+
+                /* Execute */
+                WordNode *result = NULL;
+                if (op == 0)      result = WordUnion(sentA->val, sentB->val);
+                else if (op == 1) result = WordIntersection(sentA->val, sentB->val);
+                else              result = WordDifference(sentA->val, sentB->val);
+
+                char labA[80], labB[80];
+                snprintf(labA, sizeof(labA), "File%d P%d S%d", fa, pa, sa);
+                snprintf(labB, sizeof(labB), "File%d P%d S%d", fb, pb, sb);
+                ScreenShowFullResult(OP_NAMES[op], labA, labB, "WORD", result, NULL, NULL);
+                FreeTree(&result);
+            }
+            else if (level == 1)
+            { /* ── Sentence Level ── */
+                int fa = MenuPickFile(fnames, fn_count, "Set Ops  ›  Sentence  ›  File A");
+                if (fa < 0) break;
+                FileNode *fnA = GetFileByIndex(&file_list, fa);
+                char plA[9][80]; const char *ppA[9];
+                int npA = BuildParagraphLabels(&fnA->val, plA, ppA, 9);
+                int pa = MenuPickParagraph(ppA, npA, "Set Ops  ›  Sentence  ›  Para A");
+                if (pa < 0) break;
+                ParagraphNode *parA = GetParagraphByIndex(&fnA->val, pa);
+
+                int fb = MenuPickFile(fnames, fn_count, "Set Ops  ›  Sentence  ›  File B");
+                if (fb < 0) break;
+                FileNode *fnB = GetFileByIndex(&file_list, fb);
+                char plB[9][80]; const char *ppB[9];
+                int npB = BuildParagraphLabels(&fnB->val, plB, ppB, 9);
+                int pb = MenuPickParagraph(ppB, npB, "Set Ops  ›  Sentence  ›  Para B");
+                if (pb < 0) break;
+                ParagraphNode *parB = GetParagraphByIndex(&fnB->val, pb);
+
+                SentenceList result;
+                if (op == 0)      result = SentenceUnion(parA->val, parB->val);
+                else if (op == 1) result = SentenceIntersection(parA->val, parB->val);
+                else              result = SentenceDifference(parA->val, parB->val);
+
+                char labA[80], labB[80];
+                snprintf(labA, sizeof(labA), "File%d P%d", fa, pa);
+                snprintf(labB, sizeof(labB), "File%d P%d", fb, pb);
+                ScreenShowFullResult(OP_NAMES[op], labA, labB, "SENTENCE", NULL, &result, NULL);
+                FreeSentenceList(&result);
+            }
+            else
+            { /* ── Paragraph Level ── */
+                if (file_list.count < 2)
+                {
+                    NotifyError("Need at least 2 files for paragraph operations.");
+                    break;
+                }
+                int fa = MenuPickFile(fnames, fn_count, "Set Ops  ›  Paragraph  ›  File A");
+                if (fa < 0) break;
+                int fb = MenuPickFile(fnames, fn_count, "Set Ops  ›  Paragraph  ›  File B");
+                if (fb < 0) break;
+                FileNode *fnA = GetFileByIndex(&file_list, fa);
+                FileNode *fnB = GetFileByIndex(&file_list, fb);
+
+                ParagraphList result;
+                if (op == 0)      result = ParagraphUnion(fnA->val, fnB->val);
+                else if (op == 1) result = ParagraphIntersection(fnA->val, fnB->val);
+                else              result = ParagraphDifference(fnA->val, fnB->val);
+
+                ScreenShowFullResult(OP_NAMES[op], fnA->filename, fnB->filename, "PARAGRAPH", NULL, NULL, &result);
+                FreeParagraphList(&result);
             }
             break;
         }
 
         case 4:
-        { /* Exit */
-            /* TODO: FreeFileList(&file_list);                   */
+        { /* ── Exit ── */
+            FreeFileList(&file_list);
             ClearScreen();
             int tw, th;
             GetTerminalSize(&tw, &th);
