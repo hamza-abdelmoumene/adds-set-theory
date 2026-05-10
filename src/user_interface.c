@@ -468,7 +468,7 @@ static void ClearCanvas(void)
 }
 
 // Fill a rectangle on the logo canvas.
-static void FillRect(int x0, int y0, int w, int h, RGB c)
+static void UI_FillRect(int x0, int y0, int w, int h, RGB c)
 {
     for (int y = y0; y < y0 + h && y < CH; y++)
         for (int x = x0; x < x0 + w && x < CW; x++)
@@ -483,34 +483,34 @@ static void FillRect(int x0, int y0, int w, int h, RGB c)
 static void DrawE(void)
 {
     int x = 10, w = 20, mid = (LT + LB) / 2 - LS / 2;
-    FillRect(x, LT, LS, LB - LT, L_BLACK);
-    FillRect(x, LT, w, LS, L_BLACK);
-    FillRect(x + w - LS, LT, LS, mid + LS - LT, L_BLACK);
-    FillRect(x, mid, w, LS, L_BLACK);
-    FillRect(x, LB - LS, w, LS, L_BLACK);
+    UI_FillRect(x, LT, LS, LB - LT, L_BLACK);
+    UI_FillRect(x, LT, w, LS, L_BLACK);
+    UI_FillRect(x + w - LS, LT, LS, mid + LS - LT, L_BLACK);
+    UI_FillRect(x, mid, w, LS, L_BLACK);
+    UI_FillRect(x, LB - LS, w, LS, L_BLACK);
 }
 
 // Draw the S letter on the logo canvas.
 static void DrawS(void)
 {
     int x = 34, w = 20, mid = (LT + LB) / 2 - LS / 2;
-    FillRect(x, LT, w, LS, L_BLACK);
-    FillRect(x, LT, LS, mid + LS - LT, L_BLACK);
-    FillRect(x, mid, w, LS, L_BLACK);
-    FillRect(x + w - LS, mid, LS, LB - mid, L_BLACK);
-    FillRect(x, LB - LS, w, LS, L_BLACK);
+    UI_FillRect(x, LT, w, LS, L_BLACK);
+    UI_FillRect(x, LT, LS, mid + LS - LT, L_BLACK);
+    UI_FillRect(x, mid, w, LS, L_BLACK);
+    UI_FillRect(x + w - LS, mid, LS, LB - mid, L_BLACK);
+    UI_FillRect(x, LB - LS, w, LS, L_BLACK);
 }
 
 // Draw the I letter on the logo canvas.
 static void DrawI(void)
 {
-    FillRect(61, LT, 6, LB - LT, L_BLACK);
-    FillRect(58, LT, 12, LS, L_BLACK);
-    FillRect(58, LB - LS, 12, LS, L_BLACK);
+    UI_FillRect(61, LT, 6, LB - LT, L_BLACK);
+    UI_FillRect(58, LT, 12, LS, L_BLACK);
+    UI_FillRect(58, LB - LS, 12, LS, L_BLACK);
 }
 
 // Draw the accent dot on the logo canvas.
-static void DrawDot(void) { FillRect(60, 3, 8, 5, L_BLUE); }
+static void DrawDot(void) { UI_FillRect(60, 3, 8, 5, L_BLUE); }
 
 // Compare two RGB values.
 static int RgbEquals(RGB a, RGB b) { return a.r == b.r && a.g == b.g && a.b == b.b; }
@@ -536,19 +536,6 @@ static void RenderLogo(void)
     }
 }
 
-// Small delay used during logo animation.
-static void LogoSleep(int ms)
-{
-#ifdef _WIN32
-    Sleep(ms);
-#else
-    struct timespec ts;
-    ts.tv_sec = ms / 1000;
-    ts.tv_nsec = (ms % 1000) * 1000000L;
-    nanosleep(&ts, NULL);
-#endif
-}
-
 // Type a centered line with a light typewriter effect.
 static void TypewriteCentered(const char *t, int tw)
 {
@@ -561,7 +548,7 @@ static void TypewriteCentered(const char *t, int tw)
     {
         putchar(t[i]);
         fflush(stdout);
-        LogoSleep(28);
+        SleepMillis(28);
     }
     printf("\033[0m\033[K\n");
 }
@@ -578,19 +565,19 @@ static void TypewriteLeftRight(const char *l, const char *r, int tw)
     {
         putchar(l[i]);
         fflush(stdout);
-        LogoSleep(28);
+        SleepMillis(28);
     }
     for (int i = 0; i < sp; i++)
     {
         putchar(' ');
         fflush(stdout);
-        LogoSleep(5);
+        SleepMillis(5);
     }
     for (int i = 0; i < rl; i++)
     {
         putchar(r[i]);
         fflush(stdout);
-        LogoSleep(28);
+        SleepMillis(28);
     }
     printf("\033[0m\033[K\n");
 }
