@@ -20,6 +20,10 @@ typedef struct {
     int          word_count;
     int          word_capacity;
     SentenceList current_sentences;
+    char         sentence_buf[4096];
+    int          sentence_len;
+    char         paragraph_buf[65536];
+    int          paragraph_len;
 } ParserState;
 
 /**

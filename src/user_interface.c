@@ -928,9 +928,9 @@ int MenuLevel(void)
 int MenuOperation(void)
 {
     static const char *opts[] = {
-        "Union         A ∪ B  —  all elements from both",
-        "Intersection  A ∩ B  —  elements present in both",
-        "Difference    A ∖ B  —  elements in A not in B",
+        "Union         A ∪ B  =  { x | (x ∈ A) ∨ (x ∈ B) }",
+        "Intersection  A ∩ B  =  { x | (x ∈ A) ∧ (x ∈ B) }",
+        "Difference    A ∖ B  =  { x | (x ∈ A) ∧ (x ∉ B) }",
     };
     return GenericMenu("SELECT OPERATION", opts, 3,
                        "Main Menu  ›  Set Operations  ›  Operation");
@@ -1106,6 +1106,66 @@ void ScreenShowResult(const char *op_name, const char *a_label,
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
+ *  FUTURISTIC LOADING ANIMATION
+ * ───────────────────────────────────────────────────────────────────────────── */
+static void ShowLoadingBar(const char *label, int duration_ms)
+{
+    int tw, th;
+    GetTerminalSize(&tw, &th);
+    int bar_w = 40;
+    int steps = bar_w;
+    int step_ms = duration_ms / steps;
+    int col = (tw - bar_w - 30) / 2;
+    if (col < 0) col = 0;
+    const char *spin = "◐◓◑◒";
+    int spin_len = 4;
+
+    ClearScreen();
+    for (int i = 0; i <= steps; i++)
+    {
+        MoveCursor(th / 2 - 2, col);
+        int si = (i / 2) % spin_len;
+        /* pick spinner char (each is 3 bytes UTF-8) */
+        printf(C10 BLD "  %.*s  " C12 "%s" RST "\033[K\n", 3, spin + si * 3, label);
+
+        MoveCursor(th / 2, col);
+        printf("  " C4 "▕" RST);
+        for (int j = 0; j < bar_w; j++)
+        {
+            if (j < i)
+            {
+                /* gradient: dark→bright as bar fills */
+                if (j < bar_w / 4)        printf(C5 "█" RST);
+                else if (j < bar_w / 2)   printf(C7 "▓" RST);
+                else if (j < 3*bar_w / 4) printf(C9 "▒" RST);
+                else                       printf(C11 "█" RST);
+            }
+            else
+                printf(C2 "░" RST);
+        }
+        int pct = (i * 100) / steps;
+        printf(C4 "▏" RST "  " C12 BLD "%3d%%" RST "\033[K", pct);
+
+        MoveCursor(th / 2 + 2, col);
+        printf("  " DIM GR2);
+        for (int j = 0; j < bar_w + 6; j++)
+        {
+            int d = abs(j - (bar_w + 6) / 2);
+            int reach = (i * (bar_w + 6)) / (2 * steps);
+            if (d <= reach)
+                printf("─");
+            else
+                printf(" ");
+        }
+        printf(RST "\033[K");
+
+        FlushOutput();
+        SleepMillis(step_ms);
+    }
+    SleepMillis(200);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
  *  HELPERS: collect BST words into a single display string
  * ───────────────────────────────────────────────────────────────────────────── */
 static void InorderToBuffer(WordNode *r, char *buf, int bufsz, int *pos)
@@ -1124,7 +1184,7 @@ static void BstToString(WordNode *r, char *buf, int bufsz)
     InorderToBuffer(r, buf, bufsz, &pos);
 }
 
-/* Build a display string for a SentenceList result */
+/* Build a display string for a SentenceList result using original text */
 static void SentenceListToString(SentenceList list, char *buf, int bufsz)
 {
     int pos = 0;
@@ -1132,16 +1192,14 @@ static void SentenceListToString(SentenceList list, char *buf, int bufsz)
     SentenceNode *cur = list.head;
     while (cur && pos < bufsz - 2)
     {
-        int n = snprintf(buf + pos, bufsz - pos, "S%d{", cur->id);
-        if (n > 0) pos += n;
-        InorderToBuffer(cur->val, buf, bufsz, &pos);
-        n = snprintf(buf + pos, bufsz - pos, "} ");
+        const char *text = (cur->original && cur->original[0]) ? cur->original : "(?)";
+        int n = snprintf(buf + pos, bufsz - pos, "%s. ", text);
         if (n > 0) pos += n;
         cur = Next(cur);
     }
 }
 
-/* Build a display string for a ParagraphList result */
+/* Build a display string for a ParagraphList result using original text */
 static void ParagraphListToString(ParagraphList list, char *buf, int bufsz)
 {
     int pos = 0;
@@ -1149,19 +1207,8 @@ static void ParagraphListToString(ParagraphList list, char *buf, int bufsz)
     ParagraphNode *cur = list.head;
     while (cur && pos < bufsz - 2)
     {
-        int n = snprintf(buf + pos, bufsz - pos, "P%d[", cur->id);
-        if (n > 0) pos += n;
-        SentenceNode *s = cur->val.head;
-        while (s && pos < bufsz - 2)
-        {
-            n = snprintf(buf + pos, bufsz - pos, "{");
-            if (n > 0) pos += n;
-            InorderToBuffer(s->val, buf, bufsz, &pos);
-            n = snprintf(buf + pos, bufsz - pos, "}");
-            if (n > 0) pos += n;
-            s = Next(s);
-        }
-        n = snprintf(buf + pos, bufsz - pos, "] ");
+        const char *text = (cur->original && cur->original[0]) ? cur->original : "(?)";
+        int n = snprintf(buf + pos, bufsz - pos, "P%d: %s | ", cur->id, text);
         if (n > 0) pos += n;
         cur = Next(cur);
     }
@@ -1175,21 +1222,6 @@ static int BuildParagraphLabels(ParagraphList *pl, char labels[][80], const char
     {
         ParagraphNode *p = GetParagraphByIndex(pl, i);
         snprintf(labels[i], 80, "Paragraph %d  (%d sentence%s)", i, p->val.count, p->val.count == 1 ? "" : "s");
-        ptrs[i] = labels[i];
-    }
-    return n;
-}
-
-/* Build label arrays for sentences in a paragraph */
-static int BuildSentenceLabels(SentenceList *sl, char labels[][80], const char **ptrs, int max)
-{
-    int n = sl->count < max ? sl->count : max;
-    for (int i = 0; i < n; i++)
-    {
-        char wbuf[60];
-        SentenceNode *s = GetSentenceByIndex(sl, i);
-        BstToString(s->val, wbuf, sizeof(wbuf));
-        snprintf(labels[i], 80, "S%d: %.50s", i, wbuf);
         ptrs[i] = labels[i];
     }
     return n;
@@ -1272,6 +1304,7 @@ void RunMenu(void)
             int got = ScreenLoadFile(filename, sizeof(filename));
             if (!got)
                 break;
+            ShowLoadingBar("Parsing file...", 600);
             AddFile(&file_list, filename);
             NotifyOk("File loaded successfully.");
             break;
@@ -1328,8 +1361,8 @@ void RunMenu(void)
                 fnames[i] = GetFileByIndex(&file_list, i)->filename;
 
             if (level == 0)
-            { /* ── Word Level ── */
-                /* Pick file A → paragraph A → sentence A */
+            { /* ── Word Level (between paragraphs) ── */
+                /* Pick file A → paragraph A */
                 int fa = MenuPickFile(fnames, fn_count, "Set Ops  ›  Word  ›  File A");
                 if (fa < 0) break;
                 FileNode *fnA = GetFileByIndex(&file_list, fa);
@@ -1338,13 +1371,8 @@ void RunMenu(void)
                 int pa = MenuPickParagraph(ppA, npA, "Set Ops  ›  Word  ›  Para A");
                 if (pa < 0) break;
                 ParagraphNode *parA = GetParagraphByIndex(&fnA->val, pa);
-                char slA[9][80]; const char *spA[9];
-                int nsA = BuildSentenceLabels(&parA->val, slA, spA, 9);
-                int sa = MenuPickSentence(spA, nsA, "Set Ops  ›  Word  ›  Sent A");
-                if (sa < 0) break;
-                SentenceNode *sentA = GetSentenceByIndex(&parA->val, sa);
 
-                /* Pick file B → paragraph B → sentence B */
+                /* Pick file B → paragraph B */
                 int fb = MenuPickFile(fnames, fn_count, "Set Ops  ›  Word  ›  File B");
                 if (fb < 0) break;
                 FileNode *fnB = GetFileByIndex(&file_list, fb);
@@ -1353,22 +1381,28 @@ void RunMenu(void)
                 int pb = MenuPickParagraph(ppB, npB, "Set Ops  ›  Word  ›  Para B");
                 if (pb < 0) break;
                 ParagraphNode *parB = GetParagraphByIndex(&fnB->val, pb);
-                char slB[9][80]; const char *spB[9];
-                int nsB = BuildSentenceLabels(&parB->val, slB, spB, 9);
-                int sb = MenuPickSentence(spB, nsB, "Set Ops  ›  Word  ›  Sent B");
-                if (sb < 0) break;
-                SentenceNode *sentB = GetSentenceByIndex(&parB->val, sb);
+
+                /* Collect all words from all sentences in each paragraph */
+                WordNode *allA = NULL, *allB = NULL;
+                for (SentenceNode *s = parA->val.head; s; s = Next(s))
+                    CopyTree(s->val, &allA);
+                for (SentenceNode *s = parB->val.head; s; s = Next(s))
+                    CopyTree(s->val, &allB);
+
+                ShowLoadingBar("Computing word operation...", 800);
 
                 /* Execute */
                 WordNode *result = NULL;
-                if (op == 0)      result = WordUnion(sentA->val, sentB->val);
-                else if (op == 1) result = WordIntersection(sentA->val, sentB->val);
-                else              result = WordDifference(sentA->val, sentB->val);
+                if (op == 0)      result = WordUnion(allA, allB);
+                else if (op == 1) result = WordIntersection(allA, allB);
+                else              result = WordDifference(allA, allB);
 
                 char labA[80], labB[80];
-                snprintf(labA, sizeof(labA), "File%d P%d S%d", fa, pa, sa);
-                snprintf(labB, sizeof(labB), "File%d P%d S%d", fb, pb, sb);
+                snprintf(labA, sizeof(labA), "File%d P%d", fa, pa);
+                snprintf(labB, sizeof(labB), "File%d P%d", fb, pb);
                 ScreenShowFullResult(OP_NAMES[op], labA, labB, "WORD", result, NULL, NULL);
+                FreeTree(&allA);
+                FreeTree(&allB);
                 FreeTree(&result);
             }
             else if (level == 1)
@@ -1396,6 +1430,8 @@ void RunMenu(void)
                 else if (op == 1) result = SentenceIntersection(parA->val, parB->val);
                 else              result = SentenceDifference(parA->val, parB->val);
 
+                ShowLoadingBar("Computing sentence operation...", 800);
+
                 char labA[80], labB[80];
                 snprintf(labA, sizeof(labA), "File%d P%d", fa, pa);
                 snprintf(labB, sizeof(labB), "File%d P%d", fb, pb);
@@ -1420,6 +1456,8 @@ void RunMenu(void)
                 if (op == 0)      result = ParagraphUnion(fnA->val, fnB->val);
                 else if (op == 1) result = ParagraphIntersection(fnA->val, fnB->val);
                 else              result = ParagraphDifference(fnA->val, fnB->val);
+
+                ShowLoadingBar("Computing paragraph operation...", 800);
 
                 ScreenShowFullResult(OP_NAMES[op], fnA->filename, fnB->filename, "PARAGRAPH", NULL, NULL, &result);
                 FreeParagraphList(&result);

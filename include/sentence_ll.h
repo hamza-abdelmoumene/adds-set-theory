@@ -19,6 +19,7 @@ typedef struct SentenceNode
 {
     int id;                    // Position of the sentence
     WordNode *val;             // BST of words in this sentence
+    char *original;            // Original raw sentence text from the file
     struct SentenceNode *addr; // Pointer to the next sentence
 } SentenceNode;
 
@@ -64,7 +65,7 @@ static inline void *AllocateImpl(size_t size)
 SentenceList CreateSentenceList(void);
 
 // Append a new sentence (represented by its word BST) to the list.
-void AddSentence(SentenceList *list, WordNode *bst_root);
+void AddSentence(SentenceList *list, WordNode *bst_root, const char *original);
 
 // Retrieve a sentence node by its ID (linear scan fallback).
 SentenceNode *GetSentence(SentenceList list, int id);

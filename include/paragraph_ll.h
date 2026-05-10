@@ -18,6 +18,7 @@ typedef struct ParagraphNode
 {
     int id;                     // Position of the paragraph
     SentenceList val;           // Sentences contained in this paragraph
+    char *original;             // Original raw paragraph text from the file
     struct ParagraphNode *addr; // Pointer to the next paragraph
 } ParagraphNode;
 
@@ -41,7 +42,7 @@ typedef struct ParagraphList
 ParagraphList CreateParagraphList(void);
 
 // Append a new paragraph (represented by its sentence list) to the list.
-void AddParagraph(ParagraphList *list, SentenceList sentence_list);
+void AddParagraph(ParagraphList *list, SentenceList sentence_list, const char *original);
 
 // Retrieve a paragraph node by its ID.
 ParagraphNode *GetParagraph(ParagraphList list, int id);

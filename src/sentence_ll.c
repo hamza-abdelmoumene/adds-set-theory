@@ -10,13 +10,21 @@ SentenceList CreateSentenceList(void)
 }
 
 // Append a new sentence (represented by its word BST) to the list.
-void AddSentence(SentenceList *list, WordNode *bst_root)
+void AddSentence(SentenceList *list, WordNode *bst_root, const char *original)
 {
     SentenceNode *new_node;
     Allocate(new_node);
     Ass_val(new_node, bst_root);
     Ass_adr(new_node, NULL);
-    new_node->id = list->count; // id assigned before increment
+    new_node->id = list->count;
+    if (original)
+    {
+        new_node->original = (char *)malloc(strlen(original) + 1);
+        if (new_node->original)
+            strcpy(new_node->original, original);
+    }
+    else
+        new_node->original = NULL;
 
     if (list->head == NULL)
     {
@@ -108,6 +116,7 @@ void FreeSentenceList(SentenceList *list)
     {
         SentenceNode *temp = Next(current);
         FreeTree(&current->val);
+        free(current->original);
         Free(current);
         current = temp;
     }

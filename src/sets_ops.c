@@ -63,7 +63,7 @@ static SentenceList CopySentenceList(SentenceList src)
     {
         WordNode *copy = NULL;
         CopyTree(cur->val, &copy);
-        AddSentence(&r, copy);
+        AddSentence(&r, copy, cur->original);
         cur = Next(cur);
     }
     return r;
@@ -189,7 +189,7 @@ SentenceList SentenceUnion(SentenceList A, SentenceList B)
         {
             WordNode *copy = NULL;
             CopyTree(cur->val, &copy);
-            AddSentence(&result, copy);
+            AddSentence(&result, copy, cur->original);
         }
         cur = Next(cur);
     }
@@ -209,7 +209,7 @@ SentenceList SentenceIntersection(SentenceList A, SentenceList B)
         {
             WordNode *copy = NULL;
             CopyTree(cur->val, &copy);
-            AddSentence(&result, copy);
+            AddSentence(&result, copy, cur->original);
         }
         cur = Next(cur);
     }
@@ -229,7 +229,7 @@ SentenceList SentenceDifference(SentenceList A, SentenceList B)
         {
             WordNode *copy = NULL;
             CopyTree(cur->val, &copy);
-            AddSentence(&result, copy);
+            AddSentence(&result, copy, cur->original);
         }
         cur = Next(cur);
     }
@@ -251,7 +251,7 @@ ParagraphList ParagraphUnion(ParagraphList A, ParagraphList B)
     while (cur != NULL)
     {
         SentenceList copy = CopySentenceList(cur->val);
-        AddParagraph(&result, copy);
+        AddParagraph(&result, copy, cur->original);
         cur = Next(cur);
     }
 
@@ -262,7 +262,7 @@ ParagraphList ParagraphUnion(ParagraphList A, ParagraphList B)
         if (!ParagraphExistsIn(cur->val, result))
         {
             SentenceList copy = CopySentenceList(cur->val);
-            AddParagraph(&result, copy);
+            AddParagraph(&result, copy, cur->original);
         }
         cur = Next(cur);
     }
@@ -281,7 +281,7 @@ ParagraphList ParagraphIntersection(ParagraphList A, ParagraphList B)
         if (ParagraphExistsIn(cur->val, B))
         {
             SentenceList copy = CopySentenceList(cur->val);
-            AddParagraph(&result, copy);
+            AddParagraph(&result, copy, cur->original);
         }
         cur = Next(cur);
     }
@@ -300,7 +300,7 @@ ParagraphList ParagraphDifference(ParagraphList A, ParagraphList B)
         if (!ParagraphExistsIn(cur->val, B))
         {
             SentenceList copy = CopySentenceList(cur->val);
-            AddParagraph(&result, copy);
+            AddParagraph(&result, copy, cur->original);
         }
         cur = Next(cur);
     }

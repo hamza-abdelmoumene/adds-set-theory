@@ -63,7 +63,8 @@ static void FlushSentence(ParserState *s)
     WordNode *root = NULL;
     MedianInsert(s->words, 0, (size_t)(s->word_count - 1), &root);
 
-    AddSentence(&s->current_sentences, root);
+    s->sentence_buf[s->sentence_len] = '\0';
+    AddSentence(&s->current_sentences, root, s->sentence_buf);
 
     for (int i = 0; i < s->word_count; i++)
         free(s->words[i]);
@@ -72,6 +73,8 @@ static void FlushSentence(ParserState *s)
     s->words = NULL;
     s->word_count = 0;
     s->word_capacity = 0;
+    s->sentence_len = 0;
+    s->sentence_buf[0] = '\0';
 }
 
 // Flush the current sentence list into a new paragraph.
@@ -81,9 +84,11 @@ static void FlushParagraph(ParserState *s, ParagraphList *result)
         return;
 
     BuildSentenceIndex(&s->current_sentences);
-
-    AddParagraph(result, s->current_sentences);
+    s->paragraph_buf[s->paragraph_len] = '\0';
+    AddParagraph(result, s->current_sentences, s->paragraph_buf);
     s->current_sentences = CreateSentenceList();
+    s->paragraph_len = 0;
+    s->paragraph_buf[0] = '\0';
 }
 
 // ---------------------------------------------------------------------
@@ -113,6 +118,10 @@ ParagraphList ParseFile(const char *filename)
     s.word_count = 0;
     s.word_capacity = 0;
     s.current_sentences = CreateSentenceList();
+    s.sentence_len = 0;
+    s.sentence_buf[0] = '\0';
+    s.paragraph_len = 0;
+    s.paragraph_buf[0] = '\0';
 
     int c;
     while ((c = fgetc(file)) != EOF)
@@ -120,6 +129,8 @@ ParagraphList ParseFile(const char *filename)
         if (c == ' ' || c == '\t') // detect the end of a word
         {
             FlushWord(&s);
+            if (s.sentence_len < (int)sizeof(s.sentence_buf) - 1)
+                s.sentence_buf[s.sentence_len++] = ' ';
         }
         else if (c == '.') // detect the end of a sentence
         {
@@ -136,6 +147,16 @@ ParagraphList ParseFile(const char *filename)
         {
             if (s.word_len < (int)sizeof(s.word) - 1)
                 s.word[s.word_len++] = (char)c;
+            if (s.sentence_len < (int)sizeof(s.sentence_buf) - 1)
+                s.sentence_buf[s.sentence_len++] = (char)c;
+        }
+
+        // Always accumulate characters into the paragraph buffer until it's flushed
+        if (s.paragraph_len < (int)sizeof(s.paragraph_buf) - 1)
+        {
+            // Do not accumulate leading whitespaces for a new paragraph
+            if (s.paragraph_len > 0 || !isspace(c))
+                s.paragraph_buf[s.paragraph_len++] = (char)c;
         }
     }
 

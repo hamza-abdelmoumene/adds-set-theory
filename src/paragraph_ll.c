@@ -10,11 +10,12 @@ ParagraphList CreateParagraphList(void)
 }
 
 // Append a new paragraph (represented by its sentence list) to the list.
-void AddParagraph(ParagraphList *list, SentenceList sentence_list)
+void AddParagraph(ParagraphList *list, SentenceList sentence_list, const char *original)
 {
     ParagraphNode *new_node;
     Allocate(new_node);
     new_node->id = list->count;
+    new_node->original = original ? strdup(original) : NULL;
     Ass_val(new_node, sentence_list);
     Ass_adr(new_node, NULL);
 
@@ -71,6 +72,8 @@ void FreeParagraphList(ParagraphList *list)
     {
         ParagraphNode *temp = Next(current);
         FreeSentenceList(&current->val);
+        if (current->original)
+            free(current->original);
         Free(current);
         current = temp;
     }
