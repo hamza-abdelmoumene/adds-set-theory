@@ -92,11 +92,26 @@ int IsReadableRegularFile(const char *path)
 #include <conio.h>
 
 // Helper function: sleep for the requested number of milliseconds (Windows).
-void SleepMillis(int ms) { Sleep(ms); }
+void SleepMillis(int ms) 
+{
+    LARGE_INTEGER freq, start, current;
+    QueryPerformanceFrequency(&freq);
+    QueryPerformanceCounter(&start);
+    LONGLONG wait_ticks = (LONGLONG)ms * freq.QuadPart / 1000;
+
+    do {
+        QueryPerformanceCounter(&current);
+        LONGLONG remaining = wait_ticks - (current.QuadPart - start.QuadPart);
+        if (remaining > (freq.QuadPart * 16 / 1000)) {
+            Sleep(1);
+        }
+    } while (current.QuadPart - start.QuadPart < wait_ticks);
+}
 
 // Helper function: enable ANSI output and UTF-8 on Windows terminals.
 void InitTerminal(void)
 {
+    setvbuf(stdout, NULL, _IOFBF, 65536);
     HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
     DWORD m = 0;
     GetConsoleMode(h, &m);
@@ -140,7 +155,10 @@ void SleepMillis(int ms)
 }
 
 // Nothing needed for Linux/Mac terminals to start up.
-void InitTerminal(void) {}
+void InitTerminal(void) 
+{
+    setvbuf(stdout, NULL, _IOFBF, 65536);
+}
 
 // Reads a single key from the keyboard. We turn off "echo" and "canonical mode" 
 // so the user doesn't have to press Enter to send the key to us.
