@@ -1,9 +1,9 @@
 #include "../include/user_interface.h"
 
-// Main function: run intro then launch the main UI loop.
+// The starting point of our program.
 int main(void)
 {
-    RunAnimation();
-    RunMenu();
+    RunAnimation(); // Show the cool ESI intro splash
+    RunMenu();      // Start the main interactive application
     return 0;
 }

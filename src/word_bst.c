@@ -4,95 +4,59 @@
 #include <stdbool.h>
 #include "../include/word_bst.h"
 
-// Main function: find a word in the BST and return node and parent.
+// Walks through the tree to find a word.
+// It returns two things: *p is the node if found, and *q is its parent.
 void Search(const char *word, WordNode *r, WordNode **p, WordNode **q)
 {
-
-    if (p == NULL || q == NULL)
+    // Basic checks to make sure we aren't searching for nothing
+    if (p == NULL || q == NULL || word == NULL || word[0] == '\0' || strlen(word) >= MAX_WORD)
     {
-        PrintError("Search", "output pointers must not be NULL");
+        if (p) *p = NULL;
+        if (q) *q = NULL;
         return;
     }
 
-    if (word == NULL)
-    {
-        PrintError("Search", "word must not be NULL");
-        *p = NULL;
-        *q = NULL;
-        return;
-    }
-
-    if (word[0] == '\0')
-    {
-        PrintError("Search", "word must not be empty");
-        *p = NULL;
-        *q = NULL;
-        return;
-    }
-
-    if (strlen(word) >= MAX_WORD)
-    {
-        PrintError("Search", "word exceeds MAX_WORD");
-        *p = NULL;
-        *q = NULL;
-        return;
-    }
-
-    *p = r;
-    *q = NULL;
+    *p = r;     // Start at the root
+    *q = NULL;  // Root has no parent
 
     while (*p != NULL)
     {
         int cmp = strcmp(word, NodeValue(*p));
         if (cmp == 0)
-            return;
+            return; // Found it!
 
-        *q = *p;
-        *p = (cmp < 0) ? LC(*p) : RC(*p);
+        *q = *p; // Keep track of parent before moving down
+        *p = (cmp < 0) ? LC(*p) : RC(*p); // Go left if smaller, right if bigger
     }
 }
 
-// Main function: insert a word into the BST, ignoring duplicates.
+// Inserts a new word into the tree.
+// If the word is already there, it skips it (set theory rule!).
 bool Insert(const char *word, WordNode **r)
 {
-
-    if (r == NULL)
+    if (r == NULL || word == NULL || word[0] == '\0' || strlen(word) >= MAX_WORD)
         return false;
-
-    if (word == NULL)
-    {
-        PrintError("Insert", "word must not be NULL");
-        return false;
-    }
-
-    if (word[0] == '\0')
-    {
-        PrintError("Insert", "word must not be empty");
-        return false;
-    }
-
-    if (strlen(word) >= MAX_WORD)
-    {
-        PrintError("Insert", "word exceeds MAX_WORD");
-        return false;
-    }
 
     WordNode *p = NULL;
     WordNode *q = NULL;
 
+    // See if it already exists
     Search(word, *r, &p, &q);
     if (p != NULL)
-        return false;
+        return false; // Already in the tree, skip it.
 
+    // Create a new node for the word
     WordNode *new_node = AllocateNode();
     Ass_Node_Val(new_node, word);
 
+    // If the tree was empty, this is the new root
     if (q == NULL)
     {
         *r = new_node;
         return true;
     }
 
+    // Otherwise, attach it to the parent we found during Search
     if (strcmp(word, NodeValue(q)) < 0)
         Ass_LC(q, new_node);
     else
@@ -101,7 +65,8 @@ bool Insert(const char *word, WordNode **r)
     return true;
 }
 
-// Main function: print the BST in sorted order.
+// Prints everything in the tree from A to Z.
+// We go: left child -> current node -> right child.
 void Inorder(WordNode *r)
 {
     if (r == NULL)
@@ -112,16 +77,12 @@ void Inorder(WordNode *r)
     Inorder(RC(r));
 }
 
-// Main function: free all nodes in a BST and reset the root.
+// Cleans up the whole tree to save memory.
+// We must free the children BEFORE the parent, or we'll lose them!
 void FreeTree(WordNode **r)
 {
-
     if (r == NULL || *r == NULL)
-    {
-        if (r == NULL)
-            PrintError("FreeTree", "root pointer must not be NULL");
         return;
-    }
 
     FreeTree(&((*r)->left));
     FreeTree(&((*r)->right));
@@ -129,38 +90,27 @@ void FreeTree(WordNode **r)
     *r = NULL;
 }
 
-// Main function: copy all words from one BST into another.
+// Copies all words from the 'src' tree into the 'dest' tree.
 void CopyTree(WordNode *src, WordNode **dest)
 {
-
     if (src == NULL)
         return;
 
-    if (dest == NULL)
-    {
-        PrintError("CopyTree", "destination pointer must not be NULL");
-        return;
-    }
-
-    Insert(NodeValue(src), dest);
-    CopyTree(LC(src), dest);
-    CopyTree(RC(src), dest);
+    Insert(NodeValue(src), dest); // Add the current word
+    CopyTree(LC(src), dest);      // Copy left side
+    CopyTree(RC(src), dest);      // Copy right side
 }
 
-// Main function: collect words into a dynamic array using in-order traversal.
+// Puts all words from the tree into a simple list (array).
+// This is useful for sorting or balancing the tree later.
 void CollectWords(WordNode *root, char ***array, size_t *size, size_t *capacity)
 {
-    if (array == NULL || size == NULL || capacity == NULL)
-    {
-        PrintError("CollectWords", "output parameters must not be NULL");
-        return;
-    }
-
-    if (root == NULL)
+    if (array == NULL || size == NULL || capacity == NULL || root == NULL)
         return;
 
     CollectWords(LC(root), array, size, capacity);
 
+    // Grow the array if it's full
     if (*capacity == 0)
     {
         *capacity = 8;
@@ -173,19 +123,19 @@ void CollectWords(WordNode *root, char ***array, size_t *size, size_t *capacity)
         *capacity = new_cap;
     }
 
+    // Add a copy of the word to our list
     char *copy = CheckedStrDup(NodeValue(root), "CollectWords");
     (*array)[(*size)++] = copy;
 
     CollectWords(RC(root), array, size, capacity);
 }
 
-// Helper function: comparator for sorting words alphabetically.
+// Simple alphabet sorter for our word list.
 static int comp(const void *a, const void *b)
 {
     return strcmp(*(const char **)a, *(const char **)b);
 }
 
-// Main function: sort a word array using qsort.
 void SortWords(char **array, size_t size)
 {
     if (array == NULL || size == 0)
@@ -194,17 +144,18 @@ void SortWords(char **array, size_t size)
     qsort(array, size, sizeof(char *), comp);
 }
 
-// Main function: insert words median-first to build a balanced BST.
+// This builds a "perfect" tree by always picking the middle word first.
+// This stops the tree from becoming one long line and keeps it fast!
 void MedianInsert(char **array, size_t left, size_t right, WordNode **root)
 {
-
     if (left > right)
         return;
 
     size_t mid = left + (right - left) / 2;
 
-    Insert(array[mid], root);
+    Insert(array[mid], root); // Insert the middle element
 
+    // Recurse on the left half and right half
     if (mid > left)
         MedianInsert(array, left, mid - 1, root);
 

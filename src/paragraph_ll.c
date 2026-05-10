@@ -2,29 +2,26 @@
 #include <stdlib.h>
 #include "../include/paragraph_ll.h"
 
-// Main function: create an empty paragraph list.
+// Sets up a new, empty list for paragraphs.
 ParagraphList CreateParagraphList(void)
 {
     ParagraphList list = {NULL, NULL, 0, NULL, 0};
     return list;
 }
 
-// Main function: append a paragraph node with its sentence list and original text.
+// Adds a paragraph to the end of the list.
 void AddParagraph(ParagraphList *list, SentenceList sentence_list, const char *original)
 {
-    if (list == NULL)
-    {
-        PrintError("AddParagraph", "list must not be NULL");
-        return;
-    }
+    if (list == NULL) return;
 
     ParagraphNode *new_node;
-    Allocate(new_node);
+    Allocate(new_node); // Allocate using our macro
     new_node->id = list->count;
     new_node->original = CheckedStrDup(original, "AddParagraph");
     Ass_val(new_node, sentence_list);
     Ass_adr(new_node, NULL);
 
+    // standard tail insertion
     if (list->head == NULL)
     {
         list->head = new_node;
@@ -39,7 +36,7 @@ void AddParagraph(ParagraphList *list, SentenceList sentence_list, const char *o
     list->count++;
 }
 
-// Main function: find a paragraph by id using a linear scan.
+// Walks through the list to find a specific paragraph by its ID.
 ParagraphNode *GetParagraph(ParagraphList list, int id)
 {
     if (id < 0 || id >= list.count)
@@ -56,7 +53,7 @@ ParagraphNode *GetParagraph(ParagraphList list, int id)
     return NULL;
 }
 
-// Main function: print all paragraphs and their sentences.
+// Prints everything! This calls PrintSentences, which calls Inorder.
 void PrintParagraphs(ParagraphList list)
 {
     ParagraphNode *current = list.head;
@@ -69,7 +66,8 @@ void PrintParagraphs(ParagraphList list)
     }
 }
 
-// Main function: free all paragraph nodes and their nested data.
+// Deep cleanup. This is like a waterfall: 
+// Free Paragraph -> Free Sentences -> Free Word BSTs.
 void FreeParagraphList(ParagraphList *list)
 {
     if (list == NULL)
@@ -80,37 +78,25 @@ void FreeParagraphList(ParagraphList *list)
     while (current != NULL)
     {
         ParagraphNode *temp = Next(current);
-        FreeSentenceList(&current->val);
+        FreeSentenceList(&current->val); // Cascade down to sentences
         if (current->original)
             free(current->original);
         Free(current);
         current = temp;
     }
 
-    free(list->index);
+    free(list->index); // Free the shortcut array
 
     list->head = NULL;
     list->tail = NULL;
     list->index = NULL;
     list->count = 0;
-    list->capacity = 0;
 }
 
-// Main function: build an index array for O(1) paragraph lookup.
+// Builds the "shortcut" array so we can access any paragraph by index (O(1)).
 void BuildIndex(ParagraphList *list)
 {
-    if (list == NULL)
-    {
-        PrintError("BuildIndex", "list must not be NULL");
-        return;
-    }
-
-    if (list->count == 0)
-    {
-        list->index = NULL;
-        list->capacity = 0;
-        return;
-    }
+    if (list == NULL || list->count == 0) return;
 
     list->index = (ParagraphNode **)CheckedMalloc(list->count * sizeof(ParagraphNode *),
                                                   "BuildIndex");
@@ -125,7 +111,7 @@ void BuildIndex(ParagraphList *list)
     }
 }
 
-// Main function: return a paragraph by index from the built array.
+// Uses the shortcut array to get a paragraph instantly.
 ParagraphNode *GetParagraphByIndex(ParagraphList *list, int i)
 {
     if (list == NULL || i < 0 || i >= list->count)

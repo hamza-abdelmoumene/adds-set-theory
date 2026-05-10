@@ -12,7 +12,7 @@
 #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
 #endif
 
-// Helper function: print a consistent non-fatal error message.
+// Prints an error message in a nice format: "Where: What happened"
 void PrintError(const char *context, const char *message)
 {
     const char *where = (context && context[0]) ? context : "Error";
@@ -20,7 +20,7 @@ void PrintError(const char *context, const char *message)
     fprintf(stderr, "%s: %s\n", where, what);
 }
 
-// Helper function: report an error and optionally abort the program.
+// Shows the error and exits the program if it's a big problem (fatal)
 void HandleError(const char *context, const char *message, int fatal)
 {
     PrintError(context, message);
@@ -28,24 +28,24 @@ void HandleError(const char *context, const char *message, int fatal)
         exit(EXIT_FAILURE);
 }
 
-// Helper function: allocate memory safely and abort on failure.
+// Like normal malloc, but if it fails, the program just quits instead of crashing later
 void *CheckedMalloc(size_t size, const char *context)
 {
     if (size == 0)
-        size = 1; // avoid zero-byte allocation
+        size = 1; // 0-byte malloc can be weird, so we ask for 1 byte at least
 
     void *ptr = malloc(size);
     if (ptr == NULL)
-        HandleError(context, "out of memory", 1);
+        HandleError(context, "out of memory", 1); // Fatal error: we can't continue without memory
 
     return ptr;
 }
 
-// Helper function: reallocate memory safely and abort on failure.
+// Like normal realloc, but safe. Used when we need to grow our word lists or arrays.
 void *CheckedRealloc(void *ptr, size_t size, const char *context)
 {
     if (size == 0)
-        size = 1; // avoid zero-byte allocation
+        size = 1; 
 
     void *new_ptr = realloc(ptr, size);
     if (new_ptr == NULL)
@@ -54,7 +54,7 @@ void *CheckedRealloc(void *ptr, size_t size, const char *context)
     return new_ptr;
 }
 
-// Helper function: duplicate a string with checked allocation.
+// Copies a string into new memory and makes sure the allocation worked
 char *CheckedStrDup(const char *s, const char *context)
 {
     if (s == NULL)
@@ -65,7 +65,7 @@ char *CheckedStrDup(const char *s, const char *context)
     return copy;
 }
 
-// Helper function: validate that a path is a readable regular file.
+// Checks if the file path is valid, if it's a real file (not a folder), and if we can read it.
 int IsReadableRegularFile(const char *path)
 {
     struct stat st;
@@ -74,9 +74,11 @@ int IsReadableRegularFile(const char *path)
     if (path == NULL || path[0] == '\0')
         return 0;
 
+    // stat() tells us info about the file from the OS
     if (stat(path, &st) != 0 || !S_ISREG(st.st_mode))
         return 0;
 
+    // Final check: actually try to open it
     file = fopen(path, "r");
     if (file == NULL)
         return 0;
@@ -128,7 +130,7 @@ void GetTerminalSize(int *w, int *h)
 #include <termios.h>
 #include <sys/ioctl.h>
 
-// Helper function: sleep for the requested number of milliseconds (POSIX).
+// Pauses the program for a bit. ms is in milliseconds.
 void SleepMillis(int ms)
 {
     struct timespec ts;
@@ -137,10 +139,11 @@ void SleepMillis(int ms)
     nanosleep(&ts, NULL);
 }
 
-// Helper function: no terminal initialization needed on POSIX.
+// Nothing needed for Linux/Mac terminals to start up.
 void InitTerminal(void) {}
 
-// Helper function: read one keypress (blocking) with raw mode on POSIX.
+// Reads a single key from the keyboard. We turn off "echo" and "canonical mode" 
+// so the user doesn't have to press Enter to send the key to us.
 int ReadChar(void)
 {
     struct termios o, n;
@@ -158,7 +161,8 @@ int ReadChar(void)
     return (got == 1) ? (int)c : -1;
 }
 
-// Helper function: read one keypress with a short timeout on POSIX.
+// Tries to read a key but gives up quickly (100ms) if nothing is pressed.
+// Useful for detecting special keys like arrows.
 int ReadCharNonBlocking(void)
 {
     struct termios o, n;
@@ -176,7 +180,7 @@ int ReadCharNonBlocking(void)
     return (got == 1) ? (int)c : -1;
 }
 
-// Helper function: get terminal width/height on POSIX.
+// Asks the OS for the current terminal window size.
 void GetTerminalSize(int *w, int *h)
 {
     struct winsize ws;
@@ -187,56 +191,57 @@ void GetTerminalSize(int *w, int *h)
     }
     else
     {
-        *w = 120;
+        *w = 120; // Default if we can't find out
         *h = 40;
     }
 }
 #endif
 
-// Helper function: clear the terminal screen and scrollback.
+// Clears the whole screen using ANSI escape codes.
 void ClearScreen(void)
 {
     printf("\033[2J\033[3J\033[H");
     fflush(stdout);
 }
 
-// Helper function: flush stdout to force updates on screen.
+// Forces the terminal to show everything we've printed so far.
 void FlushOutput(void) { fflush(stdout); }
 
-// Helper function: move the cursor to a specific row/column.
+// Moves the text cursor to row r and column c.
 void MoveCursor(int r, int c)
 {
     printf("\033[%d;%dH", r + 1, c + 1);
     FlushOutput();
 }
 
-// Helper function: print a fixed number of spaces.
+// Prints a specific number of spaces to the screen.
 void PadSpaces(int n)
 {
     for (int i = 0; i < n; i++)
         putchar(' ');
 }
 
-// Helper function: compute visible length while skipping ANSI sequences.
+// Counts how many characters you'd actually see on screen.
+// This is important because color codes (like \033[31m) shouldn't be counted as "visible".
 int VisibleLength(const char *s)
 {
     int len = 0;
     for (int i = 0; s[i]; i++)
     {
-        if (s[i] == '\033')
+        if (s[i] == '\033') // Skip escape sequences
         {
             while (s[i] && s[i] != 'm')
                 i++;
             continue;
         }
         unsigned char c = (unsigned char)s[i];
-        if (c < 0x80 || c >= 0xC0)
+        if (c < 0x80 || c >= 0xC0) // UTF-8 logic to count only the start of characters
             len++;
     }
     return len;
 }
 
-// Helper function: truncate a string by visible length without breaking ANSI codes.
+// Truncates a string to a certain visible length, but doesn't break the color codes.
 const char *TruncateVisible(const char *s, int max_vis, char *buf, int buf_sz)
 {
     int vlen = 0, i = 0, out = 0;
@@ -268,7 +273,8 @@ const char *TruncateVisible(const char *s, int max_vis, char *buf, int buf_sz)
     return buf;
 }
 
-// Helper function: normalize a word to lowercase letters only.
+// Takes a word and makes it clean: lowercase letters only, no punctuation.
+// "Hello!" becomes "hello".
 void NormalizeWord(char *word)
 {
     if (word == NULL)
@@ -283,7 +289,7 @@ void NormalizeWord(char *word)
     word[index] = '\0';
 }
 
-// Helper function: check whether a string is empty or whitespace-only.
+// Returns true if the string is empty or just has spaces/tabs.
 int IsBlank(const char *word)
 {
     if (word == NULL)

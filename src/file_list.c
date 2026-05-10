@@ -5,38 +5,38 @@
 #include "../include/file_parser.h"
 #include "../include/utils.h"
 
-// Create an empty file list.
+// Starts a fresh, empty list of files.
 FileList CreateFileList(void)
 {
     FileList list = {NULL, NULL, 0, NULL, 0};
     return list;
 }
 
-// Validate, parse, and append a file to the list.
+// Loads a file into the program.
+// 1. Checks if the file is readable.
+// 2. Calls the parser to break it into paragraphs.
+// 3. Adds it to the linked list and the shortcut array.
 int AddFile(FileList *list, const char *filename)
 {
-    if (list == NULL)
-    {
-        PrintError("AddFile", "list must not be NULL");
+    if (list == NULL || filename == NULL || filename[0] == '\0')
         return 0;
-    }
-    if (filename == NULL || filename[0] == '\0')
-    {
-        PrintError("AddFile", "filename must not be NULL or empty");
-        return 0;
-    }
 
+    // Make sure the file actually exists and we can open it
     if (!IsReadableRegularFile(filename))
         return 0;
 
+    // Create a new file node
     FileNode *new_node;
     Allocate(new_node);
     new_node->id = list->count;
     strncpy(new_node->filename, filename, MAX_FILENAME - 1);
     new_node->filename[MAX_FILENAME - 1] = '\0';
+    
+    // THE BIG STEP: Parse the file content
     new_node->val = ParseFile(filename);
     Ass_adr(new_node, NULL);
 
+    // Add to the linked list (at the tail)
     if (list->head == NULL)
     {
         list->head = new_node;
@@ -50,6 +50,7 @@ int AddFile(FileList *list, const char *filename)
 
     list->count++;
 
+    // Update the shortcut array so we can find this file by its ID later
     list->index = (FileNode **)CheckedRealloc(list->index, list->count * sizeof(FileNode *), "AddFile");
     list->capacity = list->count;
     list->index[new_node->id] = new_node;
@@ -57,7 +58,7 @@ int AddFile(FileList *list, const char *filename)
     return 1;
 }
 
-// Return a file node by index from the array.
+// Uses the shortcut array to get a file instantly.
 FileNode *GetFileByIndex(FileList *list, int i)
 {
     if (list == NULL || i < 0 || i >= list->count)
@@ -66,7 +67,7 @@ FileNode *GetFileByIndex(FileList *list, int i)
     return list->index[i];
 }
 
-// Print loaded files and paragraph counts.
+// Shows all loaded files and how many paragraphs they have.
 void PrintFileList(FileList list)
 {
     FileNode *current = list.head;
@@ -81,7 +82,7 @@ void PrintFileList(FileList list)
     }
 }
 
-// Free the full file list and all nested structures.
+// Wipes everything from memory.
 void FreeFileList(FileList *list)
 {
     if (list == NULL)
@@ -92,7 +93,7 @@ void FreeFileList(FileList *list)
     while (current != NULL)
     {
         FileNode *temp = Next(current);
-        FreeParagraphList(&current->val);
+        FreeParagraphList(&current->val); // Cascade down to paragraphs
         Free(current);
         current = temp;
     }
@@ -103,5 +104,4 @@ void FreeFileList(FileList *list)
     list->tail = NULL;
     list->index = NULL;
     list->count = 0;
-    list->capacity = 0;
 }

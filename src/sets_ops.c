@@ -4,21 +4,22 @@
 #include <stdio.h>
 #include "../include/sets_ops.h"
 
-// Compare two BSTs by their sorted word lists.
+// Tells us if two BSTs have exactly the same words.
+// It works by putting all words into sorted lists and comparing them.
 static bool BSTsEqual(WordNode *A, WordNode *B)
 {
     char **wA = NULL, **wB = NULL;
     size_t sA = 0, sB = 0, cA = 0, cB = 0;
 
-    CollectWords(A, &wA, &sA, &cA);
-    CollectWords(B, &wB, &sB, &cB);
+    CollectWords(A, &wA, &sA, &cA); // Turn tree A into a sorted list
+    CollectWords(B, &wB, &sB, &cB); // Turn tree B into a sorted list
 
-    bool eq = (sA == sB);
+    bool eq = (sA == sB); // Must have the same number of words
     if (eq)
     {
         for (size_t i = 0; i < sA; i++)
         {
-            if (strcmp(wA[i], wB[i]) != 0)
+            if (strcmp(wA[i], wB[i]) != 0) // Words must match exactly
             {
                 eq = false;
                 break;
@@ -26,30 +27,29 @@ static bool BSTsEqual(WordNode *A, WordNode *B)
         }
     }
 
-    for (size_t i = 0; i < sA; i++)
-        free(wA[i]);
+    // Clean up the temporary lists
+    for (size_t i = 0; i < sA; i++) free(wA[i]);
     free(wA);
-    for (size_t i = 0; i < sB; i++)
-        free(wB[i]);
+    for (size_t i = 0; i < sB; i++) free(wB[i]);
     free(wB);
 
     return eq;
 }
 
-// Check if a sentence BST exists in a sentence list.
+// Checks if a sentence (BST) is already inside a sentence list.
 static bool SentenceExistsIn(WordNode *bst, SentenceList list)
 {
     SentenceNode *cur = list.head;
     while (cur != NULL)
     {
-        if (BSTsEqual(bst, cur->val))
+        if (BSTsEqual(bst, cur->val)) // Use our equality helper
             return true;
         cur = Next(cur);
     }
     return false;
 }
 
-// Deep-copy a sentence list with duplicated BSTs.
+// Creates an exact duplicate of a sentence list.
 static SentenceList CopySentenceList(SentenceList src)
 {
     SentenceList r = CreateSentenceList();
@@ -57,14 +57,14 @@ static SentenceList CopySentenceList(SentenceList src)
     while (cur != NULL)
     {
         WordNode *copy = NULL;
-        CopyTree(cur->val, &copy);
+        CopyTree(cur->val, &copy); // Duplicate the word tree too
         AddSentence(&r, copy, cur->original);
         cur = Next(cur);
     }
     return r;
 }
 
-// Check if two sentence lists represent the same set.
+// Checks if two sentence lists have the same sentences (order doesn't matter).
 static bool SentenceListsEqual(SentenceList A, SentenceList B)
 {
     if (A.count != B.count)
@@ -80,7 +80,7 @@ static bool SentenceListsEqual(SentenceList A, SentenceList B)
     return true;
 }
 
-// Check if a paragraph (sentence list) exists in a paragraph list.
+// Checks if a paragraph is already inside a paragraph list.
 static bool ParagraphExistsIn(SentenceList sentences, ParagraphList list)
 {
     ParagraphNode *cur = list.head;
@@ -93,51 +93,48 @@ static bool ParagraphExistsIn(SentenceList sentences, ParagraphList list)
     return false;
 }
 
-// Return the union of two word BSTs.
+// UNION of two word sets: everything in A plus everything in B.
 WordNode *WordUnion(WordNode *A, WordNode *B)
 {
     WordNode *result = NULL;
-    CopyTree(A, &result);
-    CopyTree(B, &result);
+    CopyTree(A, &result); // Put all of A into result
+    CopyTree(B, &result); // Put all of B into result (duplicates are ignored automatically)
     return result;
 }
 
-// Return the intersection of two word BSTs.
+// INTERSECTION of two word sets: only words that appear in BOTH A and B.
 WordNode *WordIntersection(WordNode *A, WordNode *B)
 {
-
     char **words = NULL;
     size_t size = 0, cap = 0;
-    CollectWords(A, &words, &size, &cap);
+    CollectWords(A, &words, &size, &cap); // Get all words from A
 
     size_t keep = 0;
     for (size_t i = 0; i < size; i++)
     {
         WordNode *p = NULL, *q = NULL;
-        Search(words[i], B, &p, &q);
+        Search(words[i], B, &p, &q); // Check if word[i] is also in B
         if (p != NULL)
-            words[keep++] = words[i];
+            words[keep++] = words[i]; // Found in both, keep it!
         else
-            free(words[i]);
+            free(words[i]); // Not in B, throw it away
     }
 
     WordNode *result = NULL;
     if (keep > 0)
-        MedianInsert(words, 0, keep - 1, &result);
+        MedianInsert(words, 0, keep - 1, &result); // Build a balanced tree from kept words
 
-    for (size_t i = 0; i < keep; i++)
-        free(words[i]);
+    for (size_t i = 0; i < keep; i++) free(words[i]);
     free(words);
     return result;
 }
 
-// Return the difference of two word BSTs (A \ B).
+// DIFFERENCE of two word sets (A \ B): words that are in A but NOT in B.
 WordNode *WordDifference(WordNode *A, WordNode *B)
 {
-
     char **words = NULL;
     size_t size = 0, cap = 0;
-    CollectWords(A, &words, &size, &cap);
+    CollectWords(A, &words, &size, &cap); // Get all words from A
 
     size_t keep = 0;
     for (size_t i = 0; i < size; i++)
@@ -145,31 +142,29 @@ WordNode *WordDifference(WordNode *A, WordNode *B)
         WordNode *p = NULL, *q = NULL;
         Search(words[i], B, &p, &q);
         if (p == NULL)
-            words[keep++] = words[i];
+            words[keep++] = words[i]; // Not in B, so we keep it!
         else
-            free(words[i]);
+            free(words[i]); // Found in B, so we discard it
     }
 
     WordNode *result = NULL;
     if (keep > 0)
         MedianInsert(words, 0, keep - 1, &result);
 
-    for (size_t i = 0; i < keep; i++)
-        free(words[i]);
+    for (size_t i = 0; i < keep; i++) free(words[i]);
     free(words);
     return result;
 }
 
-// Return the union of two sentence lists.
+// UNION of two sentence sets.
 SentenceList SentenceUnion(SentenceList A, SentenceList B)
 {
-
-    SentenceList result = CopySentenceList(A);
+    SentenceList result = CopySentenceList(A); // Start with everything in A
 
     SentenceNode *cur = B.head;
     while (cur != NULL)
     {
-        if (!SentenceExistsIn(cur->val, result))
+        if (!SentenceExistsIn(cur->val, result)) // If it's not already in result, add it
         {
             WordNode *copy = NULL;
             CopyTree(cur->val, &copy);
@@ -181,7 +176,7 @@ SentenceList SentenceUnion(SentenceList A, SentenceList B)
     return result;
 }
 
-// Return the intersection of two sentence lists.
+// INTERSECTION of two sentence sets.
 SentenceList SentenceIntersection(SentenceList A, SentenceList B)
 {
     SentenceList result = CreateSentenceList();
@@ -189,7 +184,7 @@ SentenceList SentenceIntersection(SentenceList A, SentenceList B)
     SentenceNode *cur = A.head;
     while (cur != NULL)
     {
-        if (SentenceExistsIn(cur->val, B))
+        if (SentenceExistsIn(cur->val, B)) // Keep only if it exists in both
         {
             WordNode *copy = NULL;
             CopyTree(cur->val, &copy);
@@ -201,7 +196,7 @@ SentenceList SentenceIntersection(SentenceList A, SentenceList B)
     return result;
 }
 
-// Return the difference of two sentence lists (A \ B).
+// DIFFERENCE of two sentence sets (A \ B).
 SentenceList SentenceDifference(SentenceList A, SentenceList B)
 {
     SentenceList result = CreateSentenceList();
@@ -209,7 +204,7 @@ SentenceList SentenceDifference(SentenceList A, SentenceList B)
     SentenceNode *cur = A.head;
     while (cur != NULL)
     {
-        if (!SentenceExistsIn(cur->val, B))
+        if (!SentenceExistsIn(cur->val, B)) // Keep only if NOT in B
         {
             WordNode *copy = NULL;
             CopyTree(cur->val, &copy);
@@ -221,11 +216,12 @@ SentenceList SentenceDifference(SentenceList A, SentenceList B)
     return result;
 }
 
-// Return the union of two paragraph lists.
+// UNION of two paragraph sets.
 ParagraphList ParagraphUnion(ParagraphList A, ParagraphList B)
 {
     ParagraphList result = CreateParagraphList();
 
+    // Add everything from A
     ParagraphNode *cur = A.head;
     while (cur != NULL)
     {
@@ -234,6 +230,7 @@ ParagraphList ParagraphUnion(ParagraphList A, ParagraphList B)
         cur = Next(cur);
     }
 
+    // Add everything from B that isn't already in A
     cur = B.head;
     while (cur != NULL)
     {
@@ -248,7 +245,7 @@ ParagraphList ParagraphUnion(ParagraphList A, ParagraphList B)
     return result;
 }
 
-// Return the intersection of two paragraph lists.
+// INTERSECTION of two paragraph sets.
 ParagraphList ParagraphIntersection(ParagraphList A, ParagraphList B)
 {
     ParagraphList result = CreateParagraphList();
@@ -256,7 +253,7 @@ ParagraphList ParagraphIntersection(ParagraphList A, ParagraphList B)
     ParagraphNode *cur = A.head;
     while (cur != NULL)
     {
-        if (ParagraphExistsIn(cur->val, B))
+        if (ParagraphExistsIn(cur->val, B)) // Keep only if it exists in both
         {
             SentenceList copy = CopySentenceList(cur->val);
             AddParagraph(&result, copy, cur->original);
@@ -267,7 +264,7 @@ ParagraphList ParagraphIntersection(ParagraphList A, ParagraphList B)
     return result;
 }
 
-// Return the difference of two paragraph lists (A \ B).
+// DIFFERENCE of two paragraph sets (A \ B).
 ParagraphList ParagraphDifference(ParagraphList A, ParagraphList B)
 {
     ParagraphList result = CreateParagraphList();
@@ -275,7 +272,7 @@ ParagraphList ParagraphDifference(ParagraphList A, ParagraphList B)
     ParagraphNode *cur = A.head;
     while (cur != NULL)
     {
-        if (!ParagraphExistsIn(cur->val, B))
+        if (!ParagraphExistsIn(cur->val, B)) // Keep only if NOT in B
         {
             SentenceList copy = CopySentenceList(cur->val);
             AddParagraph(&result, copy, cur->original);
@@ -286,44 +283,46 @@ ParagraphList ParagraphDifference(ParagraphList A, ParagraphList B)
     return result;
 }
 
-// Count nodes in a word BST.
+// Counts nodes in a word BST.
 size_t WordCardinality(WordNode *A)
 {
     if (A == NULL)
         return 0;
 
+    // The size is 1 (the current node) + size of left side + size of right side.
     return 1 + WordCardinality(LC(A)) + WordCardinality(RC(A));
 }
 
-// Return the size of a sentence list.
+// Returns the number of sentences in the list.
 size_t SentenceCardinality(SentenceList A)
 {
     return (A.count < 0) ? 0U : (size_t)A.count;
 }
 
-// Return the size of a paragraph list.
+// Returns the number of paragraphs in the list.
 size_t ParagraphCardinality(ParagraphList A)
 {
     return (A.count < 0) ? 0U : (size_t)A.count;
 }
 
-// Check whether A is a subset of B at word level.
+// Check whether set A is a subset of set B (every word in A must be in B).
 bool WordIsSubset(WordNode *A, WordNode *B)
 {
     WordNode *p = NULL;
     WordNode *q = NULL;
 
     if (A == NULL)
-        return true;
+        return true; // Empty set is always a subset!
 
-    Search(NodeValue(A), B, &p, &q);
+    Search(NodeValue(A), B, &p, &q); // Check if the current word of A is in B
     if (p == NULL)
-        return false;
+        return false; // Found a word in A that isn't in B!
 
+    // Check all other words in the left and right sides of the tree
     return WordIsSubset(LC(A), B) && WordIsSubset(RC(A), B);
 }
 
-// Check whether A is a subset of B at sentence level.
+// Check whether every sentence in A is also in B.
 bool SentenceIsSubset(SentenceList A, SentenceList B)
 {
     SentenceNode *cur = A.head;
@@ -338,7 +337,7 @@ bool SentenceIsSubset(SentenceList A, SentenceList B)
     return true;
 }
 
-// Check whether A is a subset of B at paragraph level.
+// Check whether every paragraph in A is also in B.
 bool ParagraphIsSubset(ParagraphList A, ParagraphList B)
 {
     ParagraphNode *cur = A.head;
